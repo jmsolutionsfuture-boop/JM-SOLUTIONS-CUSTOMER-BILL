@@ -1,16 +1,282 @@
 ---
-
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/layout/Navbar.astro';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout title="Dashboard - Facturador Digital">
+  <Navbar currentPath="/" />
+  
+  <main class="container">
+    <div class="dashboard-header">
+      <h1>Dashboard</h1>
+      <p>Bienvenido a tu sistema de facturación</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #1e40af);">
+          📄
+        </div>
+        <div class="stat-content">
+          <h3 id="total-invoices">0</h3>
+          <p>Facturas Totales</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+          ✅
+        </div>
+        <div class="stat-content">
+          <h3 id="paid-invoices">0</h3>
+          <p>Facturas Pagadas</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+          ⏳
+        </div>
+        <div class="stat-content">
+          <h3 id="pending-invoices">0</h3>
+          <p>Facturas Pendientes</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+          👥
+        </div>
+        <div class="stat-content">
+          <h3 id="total-customers">0</h3>
+          <p>Clientes</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions-section">
+      <h2>Acciones Rápidas</h2>
+      <div class="actions-grid">
+        <a href="/facturas/nueva" class="action-card">
+          <div class="action-icon">➕</div>
+          <h3>Nueva Factura</h3>
+          <p>Crear una factura para un cliente</p>
+        </a>
+
+        <a href="/clientes" class="action-card">
+          <div class="action-icon">👤</div>
+          <h3>Agregar Cliente</h3>
+          <p>Registrar un nuevo cliente</p>
+        </a>
+
+        <a href="/configuracion" class="action-card">
+          <div class="action-icon">⚙️</div>
+          <h3>Configuración</h3>
+          <p>Configurar datos del negocio</p>
+        </a>
+      </div>
+    </div>
+
+    <div class="recent-section">
+      <h2>Últimas Facturas</h2>
+      <div id="recent-invoices" class="empty-state">
+        <p>No hay facturas aún. ¡Crea tu primera factura!</p>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { storage } from '../scripts/storage';
+
+  function updateStats() {
+    const invoices = storage.getInvoices();
+    const customers = storage.getCustomers();
+
+    const paidCount = invoices.filter(inv => inv.status === 'paid').length;
+    const pendingCount = invoices.filter(inv => inv.status === 'draft' || inv.status === 'sent').length;
+
+    document.getElementById('total-invoices')!.textContent = invoices.length.toString();
+    document.getElementById('paid-invoices')!.textContent = paidCount.toString();
+    document.getElementById('pending-invoices')!.textContent = pendingCount.toString();
+    document.getElementById('total-customers')!.textContent = customers.length.toString();
+
+    // Show recent invoices
+    const recentContainer = document.getElementById('recent-invoices')!;
+    const recentInvoices = invoices.slice(-5).reverse();
+
+    if (recentInvoices.length > 0) {
+      recentContainer.innerHTML = `
+        <div class="invoices-list">
+          ${recentInvoices.map(inv => {
+            const statusClass = inv.status === 'paid' ? 'badge-success' : 
+                               inv.status === 'sent' ? 'badge-warning' : 'badge-info';
+            const statusText = inv.status === 'paid' ? 'Pagada' : 
+                              inv.status === 'sent' ? 'Enviada' : 'Borrador';
+            
+            return `
+              <div class="invoice-item">
+                <div>
+                  <strong>${inv.invoiceNumber}</strong>
+                  <p>${inv.customerName}</p>
+                </div>
+                <div>
+                  <span class="badge ${statusClass}">${statusText}</span>
+                  <strong>$${inv.total.toFixed(2)}</strong>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+  }
+
+  // Update on load
+  updateStats();
+
+  // Listen for storage changes
+  window.addEventListener('storage', updateStats);
+</script>
+
+<style>
+  main {
+    padding: var(--space-2xl) var(--space-lg);
+  }
+
+  .dashboard-header {
+    margin-bottom: var(--space-2xl);
+  }
+
+  .dashboard-header h1 {
+    margin-bottom: var(--space-sm);
+  }
+
+  .dashboard-header p {
+    color: var(--text-muted);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+  }
+
+  .stat-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+  }
+
+  .stat-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
+  .stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+  }
+
+  .stat-content h3 {
+    font-size: 2rem;
+    margin-bottom: var(--space-xs);
+  }
+
+  .stat-content p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  .actions-section,
+  .recent-section {
+    margin-bottom: var(--space-2xl);
+  }
+
+  .actions-section h2,
+  .recent-section h2 {
+    margin-bottom: var(--space-lg);
+  }
+
+  .actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-lg);
+  }
+
+  .action-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    text-align: center;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: var(--transition);
+  }
+
+  .action-card:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+  }
+
+  .action-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-md);
+  }
+
+  .action-card h3 {
+    margin-bottom: var(--space-sm);
+  }
+
+  .action-card p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: var(--space-2xl);
+    color: var(--text-muted);
+  }
+
+  .invoices-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .invoice-item {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .invoice-item > div {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .invoice-item p {
+    font-size: 0.875rem;
+    margin: 0;
+  }
+</style>

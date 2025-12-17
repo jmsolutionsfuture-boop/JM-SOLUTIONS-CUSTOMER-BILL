@@ -1,0 +1,337 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/layout/Navbar.astro';
+
+const { id } = Astro.params;
+---
+
+<Layout title="Detalle Cliente - Facturador Digital">
+  <Navbar currentPath="/clientes" />
+  
+  <main class="container" data-customer-id={id}>
+    <div class="breadcrumb">
+      <a href="/clientes">← Volver a Clientes</a>
+    </div>
+
+    <div id="customer-detail">
+      <!-- Customer detail will be loaded here -->
+    </div>
+
+    <div class="invoices-section">
+      <div class="section-header">
+        <h2>Facturas del Cliente</h2>
+        <a href={`/facturas/nueva?customerId=${id}`} class="btn btn-primary">
+          <span>➕</span>
+          Nueva Factura
+        </a>
+      </div>
+
+      <div id="customer-invoices">
+        <!-- Invoices will be loaded here -->
+      </div>
+
+      <div id="no-invoices" class="empty-state" style="display: none;">
+        <p>Este cliente no tiene facturas aún.</p>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { storage } from '../../scripts/storage';
+
+  // Get customerId from data attribute
+  const customerId = document.querySelector('main')?.getAttribute('data-customer-id');
+
+  function loadCustomerDetail() {
+    if (!customerId) {
+      console.error('No customer ID found');
+      return;
+    }
+    
+    const customer = storage.getCustomer(customerId);
+    const detailContainer = document.getElementById('customer-detail');
+
+    if (!customer || !detailContainer) {
+      if (detailContainer) {
+        detailContainer.innerHTML = `
+          <div class="error-message">
+            <h2>Cliente no encontrado</h2>
+            <a href="/clientes" class="btn btn-primary">Volver a Clientes</a>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    const invoices = storage.getInvoicesByCustomer(customerId);
+    const totalInvoices = invoices.length;
+    const totalAmount = invoices.reduce((sum, inv) => sum + inv.total, 0);
+    const paidAmount = invoices
+      .filter(inv => inv.status === 'paid')
+      .reduce((sum, inv) => sum + inv.total, 0);
+    const pendingAmount = totalAmount - paidAmount;
+
+    if (detailContainer) {
+      detailContainer.innerHTML = `
+      <div class="customer-detail-card glass-card">
+        <div class="customer-header">
+          <div class="customer-avatar-large">${customer.name.charAt(0).toUpperCase()}</div>
+          <div>
+            <h1>${customer.name}</h1>
+            <p class="customer-rif">${customer.rif}</p>
+          </div>
+        </div>
+
+        <div class="customer-info-grid">
+          <div class="info-item">
+            <span class="info-label">📧 Email</span>
+            <span class="info-value">${customer.email}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">📱 Teléfono</span>
+            <span class="info-value">${customer.phone}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">📍 Dirección</span>
+            <span class="info-value">${customer.address}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">📅 Cliente Desde</span>
+            <span class="info-value">${new Date(customer.createdAt).toLocaleDateString('es-VE')}</span>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-box">
+            <strong>${totalInvoices}</strong>
+            <span>Facturas</span>
+          </div>
+          <div class="stat-box">
+            <strong>$${totalAmount.toFixed(2)}</strong>
+            <span>Total Facturado</span>
+          </div>
+          <div class="stat-box">
+            <strong>$${paidAmount.toFixed(2)}</strong>
+            <span>Pagado</span>
+          </div>
+          <div class="stat-box">
+            <strong>$${pendingAmount.toFixed(2)}</strong>
+            <span>Pendiente</span>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+  }
+
+  function loadCustomerInvoices() {
+    if (!customerId) {
+      console.error('No customer ID found');
+      return;
+    }
+    
+    const invoices = storage.getInvoicesByCustomer(customerId);
+    const invoicesContainer = document.getElementById('customer-invoices');
+    const noInvoices = document.getElementById('no-invoices');
+
+    if (invoices.length === 0) {
+      if (invoicesContainer) invoicesContainer.innerHTML = '';
+      if (noInvoices) noInvoices.style.display = 'block';
+      return;
+    }
+
+    if (noInvoices) noInvoices.style.display = 'none';
+    if (invoicesContainer) {
+      invoicesContainer.innerHTML = `
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Fecha</th>
+              <th>Vencimiento</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoices.map(invoice => {
+              const statusClass = invoice.status === 'paid' ? 'badge-success' : 
+                                 invoice.status === 'sent' ? 'badge-warning' : 'badge-info';
+              const statusText = invoice.status === 'paid' ? 'Pagada' : 
+                                invoice.status === 'sent' ? 'Enviada' : 'Borrador';
+
+              return `
+                <tr>
+                  <td><strong>${invoice.invoiceNumber}</strong></td>
+                  <td>${new Date(invoice.date).toLocaleDateString('es-VE')}</td>
+                  <td>${new Date(invoice.dueDate).toLocaleDateString('es-VE')}</td>
+                  <td>${invoice.items.length} items</td>
+                  <td><strong>$${invoice.total.toFixed(2)}</strong></td>
+                  <td><span class="badge ${statusClass}">${statusText}</span></td>
+                  <td>
+                    <button class="btn btn-sm btn-outline view-invoice" data-id="${invoice.id}">Ver</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    }
+
+    // Attach event listeners
+    document.querySelectorAll('.view-invoice').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const invoiceId = btn.getAttribute('data-id');
+        if (invoiceId) {
+          window.location.href = `/facturas/${invoiceId}`;
+        }
+      });
+    });
+  }
+
+  // Load on page load
+  loadCustomerDetail();
+  loadCustomerInvoices();
+</script>
+
+<style>
+  main {
+    padding: var(--space-2xl) var(--space-lg);
+  }
+
+  .breadcrumb {
+    margin-bottom: var(--space-xl);
+  }
+
+  .breadcrumb a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .breadcrumb a:hover {
+    text-decoration: underline;
+  }
+
+  .customer-detail-card {
+    margin-bottom: var(--space-2xl);
+  }
+
+  .customer-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .customer-avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 600;
+  }
+
+  .customer-rif {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  .customer-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .info-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .info-value {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md);
+  }
+
+  .stat-box {
+    background: var(--bg-secondary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    text-align: center;
+  }
+
+  .stat-box strong {
+    display: block;
+    font-size: 1.5rem;
+    color: var(--primary);
+    margin-bottom: var(--space-xs);
+  }
+
+  .stat-box span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .invoices-section {
+    margin-top: var(--space-2xl);
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+  }
+
+  .table-container {
+    overflow-x: auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-sm {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 0.75rem;
+  }
+
+  .error-message {
+    text-align: center;
+    padding: var(--space-2xl);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: var(--space-2xl);
+    color: var(--text-muted);
+  }
+</style>

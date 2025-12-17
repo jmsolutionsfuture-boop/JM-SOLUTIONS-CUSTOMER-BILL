@@ -1,0 +1,119 @@
+---
+const { currentPath = '/' } = Astro.props;
+
+const navItems = [
+  { name: 'Dashboard', path: '/', icon: '📊' },
+  { name: 'Clientes', path: '/clientes', icon: '👥' },
+  { name: 'Facturas', path: '/facturas', icon: '📄' },
+  { name: 'Configuración', path: '/configuracion', icon: '⚙️' },
+];
+---
+
+<nav class="navbar">
+  <div class="navbar-container">
+    <div class="navbar-brand">
+      <span class="brand-icon">💼</span>
+      <span class="brand-text">Facturador Digital</span>
+    </div>
+    
+    <ul class="navbar-menu">
+      {navItems.map(item => (
+        <li>
+          <a 
+            href={item.path} 
+            class:list={['nav-link', { active: currentPath === item.path }]}
+          >
+            <span class="nav-icon">{item.icon}</span>
+            <span>{item.name}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</nav>
+
+<style>
+  .navbar {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-lg);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .navbar-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--space-md) var(--space-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    color: white;
+    font-weight: 600;
+    font-size: 1.25rem;
+  }
+
+  .brand-icon {
+    font-size: 1.75rem;
+  }
+
+  .navbar-menu {
+    display: flex;
+    list-style: none;
+    gap: var(--space-sm);
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-lg);
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+    font-weight: 500;
+  }
+
+  .nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .nav-link.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+
+  .nav-icon {
+    font-size: 1.25rem;
+  }
+
+  @media (max-width: 768px) {
+    .navbar-container {
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .navbar-menu {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .nav-link {
+      padding: var(--space-sm) var(--space-md);
+      font-size: 0.875rem;
+    }
+
+    .brand-text {
+      font-size: 1rem;
+    }
+  }
+</style>

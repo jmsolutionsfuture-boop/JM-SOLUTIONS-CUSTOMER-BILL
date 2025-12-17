@@ -1,0 +1,613 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/layout/Navbar.astro';
+---
+
+<Layout title="Nueva Factura - Facturador Digital">
+  <Navbar currentPath="/facturas" />
+  
+  <main class="container">
+    <div class="breadcrumb">
+      <a href="/facturas">← Volver a Facturas</a>
+    </div>
+
+    <h1>Nueva Factura</h1>
+
+    <div class="invoice-form-layout">
+      <div class="form-section">
+        <div class="card">
+          <h2>Información de la Factura</h2>
+
+          <div class="form-group">
+            <label class="form-label">Número de Factura</label>
+            <input type="text" id="invoice-number" class="form-input" readonly />
+          </div>
+
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label class="form-label">Fecha de Emisión *</label>
+              <input type="date" id="invoice-date" class="form-input" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Fecha de Vencimiento *</label>
+              <input type="date" id="invoice-due-date" class="form-input" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Cliente *</label>
+            <select id="customer-select" class="form-select" required>
+              <option value="">Seleccionar cliente...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Estado</label>
+            <select id="invoice-status" class="form-select">
+              <option value="draft">Borrador</option>
+              <option value="sent">Enviada</option>
+              <option value="paid">Pagada</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="items-header">
+            <h2>Items de la Factura</h2>
+            <button type="button" class="btn btn-primary" id="add-item-btn">
+              <span>➕</span>
+              Agregar Item
+            </button>
+          </div>
+
+          <div id="items-container">
+            <!-- Items will be added here -->
+          </div>
+
+          <div id="no-items" class="empty-state">
+            <p>Agrega items a la factura</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Notas</h3>
+          <textarea id="invoice-notes" class="form-textarea" placeholder="Notas adicionales (opcional)"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancel-btn">Cancelar</button>
+          <button type="button" class="btn btn-success" id="save-invoice-btn">Guardar Factura</button>
+        </div>
+      </div>
+
+      <div class="preview-section">
+        <div class="preview-sticky">
+          <h2>Vista Previa</h2>
+          <div id="invoice-preview" class="invoice-preview-card">
+            <!-- Preview will be rendered here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { storage, type InvoiceItem } from '../../scripts/storage';
+
+  let items: InvoiceItem[] = [];
+  let itemCounter = 0;
+
+  function initForm() {
+    // Set invoice number
+    const invoiceNumber = storage.getNextInvoiceNumber();
+    (document.getElementById('invoice-number') as HTMLInputElement).value = invoiceNumber;
+
+    // Set default dates
+    const today = new Date().toISOString().split('T')[0];
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+    
+    (document.getElementById('invoice-date') as HTMLInputElement).value = today;
+    (document.getElementById('invoice-due-date') as HTMLInputElement).value = dueDate.toISOString().split('T')[0];
+
+    // Load customers
+    const customers = storage.getCustomers();
+    const customerSelect = document.getElementById('customer-select') as HTMLSelectElement;
+    
+    customers.forEach(customer => {
+      const option = document.createElement('option');
+      option.value = customer.id;
+      option.textContent = `${customer.name} (${customer.rif})`;
+      customerSelect.appendChild(option);
+    });
+
+    // Check for pre-selected customer from URL
+    const params = new URLSearchParams(window.location.search);
+    const customerId = params.get('customerId');
+    if (customerId) {
+      customerSelect.value = customerId;
+    }
+
+    updatePreview();
+  }
+
+  function addItem() {
+    const id = `item-${++itemCounter}`;
+    const item: InvoiceItem = {
+      id,
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      total: 0
+    };
+    items.push(item);
+    renderItems();
+    updatePreview();
+  }
+
+  function removeItem(id: string) {
+    items = items.filter(item => item.id !== id);
+    renderItems();
+    updatePreview();
+  }
+
+  function updateItem(id: string, field: keyof InvoiceItem, value: any) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    if (field === 'description') {
+      item.description = value;
+    } else if (field === 'quantity') {
+      item.quantity = parseFloat(value) || 0;
+    } else if (field === 'unitPrice') {
+      item.unitPrice = parseFloat(value) || 0;
+    }
+
+    item.total = item.quantity * item.unitPrice;
+    renderItems();
+    updatePreview();
+  }
+
+  function renderItems() {
+    const container = document.getElementById('items-container')!;
+    const noItems = document.getElementById('no-items')!;
+
+    if (items.length === 0) {
+      container.innerHTML = '';
+      noItems.style.display = 'block';
+      return;
+    }
+
+    noItems.style.display = 'none';
+    container.innerHTML = items.map(item => `
+      <div class="item-row" data-id="${item.id}">
+        <div class="item-fields">
+          <input 
+            type="text" 
+            class="form-input item-description" 
+            placeholder="Descripción del item"
+            value="${item.description}"
+            data-id="${item.id}"
+          />
+          <input 
+            type="number" 
+            class="form-input item-quantity" 
+            placeholder="Cant."
+            value="${item.quantity}"
+            min="0"
+            step="0.01"
+            data-id="${item.id}"
+          />
+          <input 
+            type="number" 
+            class="form-input item-price" 
+            placeholder="Precio"
+            value="${item.unitPrice}"
+            min="0"
+            step="0.01"
+            data-id="${item.id}"
+          />
+          <div class="item-total">
+            <strong>$${item.total.toFixed(2)}</strong>
+          </div>
+          <button type="button" class="btn btn-danger btn-sm remove-item" data-id="${item.id}">
+            🗑️
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    // Attach event listeners
+    document.querySelectorAll('.item-description').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const target = e.target as HTMLInputElement;
+        updateItem(target.dataset.id!, 'description', target.value);
+      });
+    });
+
+    document.querySelectorAll('.item-quantity').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const target = e.target as HTMLInputElement;
+        updateItem(target.dataset.id!, 'quantity', target.value);
+      });
+    });
+
+    document.querySelectorAll('.item-price').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const target = e.target as HTMLInputElement;
+        updateItem(target.dataset.id!, 'unitPrice', target.value);
+      });
+    });
+
+    document.querySelectorAll('.remove-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = (e.target as HTMLElement).dataset.id!;
+        removeItem(id);
+      });
+    });
+  }
+
+  function updatePreview() {
+    const businessSettings = storage.getBusinessSettings();
+    const customerSelect = document.getElementById('customer-select') as HTMLSelectElement;
+    const selectedCustomerId = customerSelect.value;
+    const customer = selectedCustomerId ? storage.getCustomer(selectedCustomerId) : null;
+
+    const invoiceNumber = (document.getElementById('invoice-number') as HTMLInputElement).value;
+    const invoiceDate = (document.getElementById('invoice-date') as HTMLInputElement).value;
+    const dueDate = (document.getElementById('invoice-due-date') as HTMLInputElement).value;
+
+    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+    const tax = subtotal * (businessSettings.taxPercentage / 100);
+    const total = subtotal + tax;
+
+    const preview = document.getElementById('invoice-preview')!;
+    preview.innerHTML = `
+      <div class="invoice-document">
+        <div class="invoice-header">
+          <div class="business-info">
+            <h2>${businessSettings.name}</h2>
+            <p>RIF: ${businessSettings.rif}</p>
+            <p>${businessSettings.address}</p>
+            <p>${businessSettings.phone}</p>
+            <p>${businessSettings.email}</p>
+          </div>
+          <div class="invoice-info">
+            <h1>FACTURA</h1>
+            <p><strong>${invoiceNumber}</strong></p>
+            <p>Fecha: ${new Date(invoiceDate).toLocaleDateString('es-VE')}</p>
+            <p>Vencimiento: ${new Date(dueDate).toLocaleDateString('es-VE')}</p>
+          </div>
+        </div>
+
+        <div class="customer-box">
+          <h3>Cliente</h3>
+          ${customer ? `
+            <p><strong>${customer.name}</strong></p>
+            <p>RIF: ${customer.rif}</p>
+            <p>${customer.email}</p>
+            <p>${customer.phone}</p>
+            <p>${customer.address}</p>
+          ` : '<p class="text-muted">Selecciona un cliente</p>'}
+        </div>
+
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>Descripción</th>
+              <th>Cantidad</th>
+              <th>Precio Unit.</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.length > 0 ? items.map(item => `
+              <tr>
+                <td>${item.description || '-'}</td>
+                <td>${item.quantity}</td>
+                <td>${businessSettings.currency} ${item.unitPrice.toFixed(2)}</td>
+                <td>${businessSettings.currency} ${item.total.toFixed(2)}</td>
+              </tr>
+            `).join('') : `
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-muted);">
+                  No hay items agregados
+                </td>
+              </tr>
+            `}
+          </tbody>
+        </table>
+
+        <div class="invoice-totals">
+          <div class="totals-row">
+            <span>Subtotal:</span>
+            <strong>${businessSettings.currency} ${subtotal.toFixed(2)}</strong>
+          </div>
+          <div class="totals-row">
+            <span>IVA (${businessSettings.taxPercentage}%):</span>
+            <strong>${businessSettings.currency} ${tax.toFixed(2)}</strong>
+          </div>
+          <div class="totals-row total-row">
+            <span>Total:</span>
+            <strong>${businessSettings.currency} ${total.toFixed(2)}</strong>
+          </div>
+        </div>
+
+        ${businessSettings.signature ? `
+          <div class="signature-section">
+            <img src="${businessSettings.signature}" alt="Firma" class="signature-img" />
+            <p>Firma Autorizada</p>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function saveInvoice() {
+    const customerSelect = document.getElementById('customer-select') as HTMLSelectElement;
+    const customerId = customerSelect.value;
+
+    if (!customerId) {
+      alert('Por favor selecciona un cliente');
+      return;
+    }
+
+    if (items.length === 0) {
+      alert('Por favor agrega al menos un item');
+      return;
+    }
+
+    const customer = storage.getCustomer(customerId)!;
+    const businessSettings = storage.getBusinessSettings();
+    
+    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+    const tax = subtotal * (businessSettings.taxPercentage / 100);
+    const total = subtotal + tax;
+
+    const invoice = {
+      invoiceNumber: (document.getElementById('invoice-number') as HTMLInputElement).value,
+      customerId,
+      customerName: customer.name,
+      items: [...items],
+      subtotal,
+      tax,
+      taxPercentage: businessSettings.taxPercentage,
+      total,
+      date: (document.getElementById('invoice-date') as HTMLInputElement).value,
+      dueDate: (document.getElementById('invoice-due-date') as HTMLInputElement).value,
+      status: (document.getElementById('invoice-status') as HTMLSelectElement).value as any,
+      notes: (document.getElementById('invoice-notes') as HTMLTextAreaElement).value,
+    };
+
+    storage.saveInvoice(invoice);
+    alert('¡Factura guardada exitosamente!');
+    window.location.href = '/facturas';
+  }
+
+  // Event listeners
+  document.getElementById('add-item-btn')!.addEventListener('click', addItem);
+  document.getElementById('save-invoice-btn')!.addEventListener('click', saveInvoice);
+  document.getElementById('cancel-btn')!.addEventListener('click', () => {
+    if (confirm('¿Estás seguro de cancelar? Los cambios se perderán.')) {
+      window.location.href = '/facturas';
+    }
+  });
+
+  // Update preview on form changes
+  document.getElementById('customer-select')!.addEventListener('change', updatePreview);
+  document.getElementById('invoice-date')!.addEventListener('change', updatePreview);
+  document.getElementById('invoice-due-date')!.addEventListener('change', updatePreview);
+
+  // Initialize
+  initForm();
+</script>
+
+<style>
+  main {
+    padding: var(--space-2xl) var(--space-lg);
+  }
+
+  .breadcrumb {
+    margin-bottom: var(--space-xl);
+  }
+
+  .breadcrumb a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .invoice-form-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2xl);
+    margin-top: var(--space-xl);
+  }
+
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .preview-section {
+    position: relative;
+  }
+
+  .preview-sticky {
+    position: sticky;
+    top: var(--space-xl);
+  }
+
+  .items-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+  }
+
+  .item-row {
+    margin-bottom: var(--space-md);
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+  }
+
+  .item-fields {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: var(--space-sm);
+    align-items: center;
+  }
+
+  .item-total {
+    text-align: right;
+    padding: var(--space-sm);
+  }
+
+  .form-actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: flex-end;
+  }
+
+  /* Invoice Preview Styles */
+  .invoice-preview-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2xl);
+    box-shadow: var(--shadow-lg);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .invoice-document {
+    color: #000;
+  }
+
+  .invoice-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-lg);
+    border-bottom: 2px solid #ddd;
+  }
+
+  .business-info h2,
+  .invoice-info h1 {
+    color: var(--primary);
+    margin-bottom: var(--space-sm);
+  }
+
+  .business-info p,
+  .invoice-info p {
+    margin: var(--space-xs) 0;
+    font-size: 0.875rem;
+    color: #333;
+  }
+
+  .invoice-info {
+    text-align: right;
+  }
+
+  .customer-box {
+    background: #f8f9fa;
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-xl);
+  }
+
+  .customer-box h3 {
+    color: var(--primary);
+    margin-bottom: var(--space-sm);
+    font-size: 1rem;
+  }
+
+  .customer-box p {
+    margin: var(--space-xs) 0;
+    font-size: 0.875rem;
+    color: #333;
+  }
+
+  .invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--space-xl) 0;
+  }
+
+  .invoice-table thead {
+    background: var(--primary);
+    color: white;
+  }
+
+  .invoice-table th {
+    padding: var(--space-md);
+    text-align: left;
+    font-size: 0.875rem;
+  }
+
+  .invoice-table td {
+    padding: var(--space-md);
+    border-bottom: 1px solid #ddd;
+    font-size: 0.875rem;
+    color: #333;
+  }
+
+  .invoice-totals {
+    margin-left: auto;
+    width: 300px;
+    margin-top: var(--space-xl);
+  }
+
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-sm) 0;
+    font-size: 0.875rem;
+    color: #333;
+  }
+
+  .total-row {
+    border-top: 2px solid #ddd;
+    padding-top: var(--space-md);
+    margin-top: var(--space-sm);
+    font-size: 1.25rem;
+    color: var(--primary);
+  }
+
+  .signature-section {
+    margin-top: var(--space-2xl);
+    text-align: center;
+  }
+
+  .signature-img {
+    max-width: 200px;
+    height: auto;
+    margin-bottom: var(--space-sm);
+  }
+
+  .text-muted {
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 1024px) {
+    .invoice-form-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .preview-sticky {
+      position: static;
+    }
+
+    .item-fields {
+      grid-template-columns: 1fr;
+    }
+
+    .item-total {
+      text-align: left;
+    }
+  }
+</style>
