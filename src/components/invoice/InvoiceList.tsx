@@ -1,15 +1,31 @@
 
 import React, { useState, useMemo } from 'react';
-import { useStorage } from '../../hooks/useStorage';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Select } from '../ui/Select';
-import type { Invoice } from '../../scripts/storage';
+import { useStorage } from '@/hooks/useStorage';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Card, CardContent } from '@/components/ui/card';
+import { Search, FileEdit, Eye, Trash2, Plus, Filter } from 'lucide-react';
 
 export const InvoiceList: React.FC = () => {
   const { invoices, updateInvoice, deleteInvoice } = useStorage();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const filteredInvoices = useMemo(() => {
     let result = [...invoices].sort((a, b) => 
@@ -24,7 +40,7 @@ export const InvoiceList: React.FC = () => {
       );
     }
 
-    if (statusFilter) {
+    if (statusFilter !== 'all') {
       result = result.filter(inv => inv.status === statusFilter);
     }
 
@@ -62,96 +78,114 @@ export const InvoiceList: React.FC = () => {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return <Badge className="bg-success hover:bg-success/90">Pagada</Badge>;
+      case 'sent':
+        return <Badge variant="secondary" className="bg-amber-100 text-amber-700">Enviada</Badge>;
+      default:
+        return <Badge variant="outline">Borrador</Badge>;
+    }
+  }
+
   return (
-    <div>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-bold mb-2">Facturas</h1>
-          <p className="text-slate-500">Gestiona todas tus facturas</p>
+          <h1 className="text-4xl font-extrabold tracking-tight">Facturas</h1>
+          <p className="text-muted-foreground text-lg">Gestiona todas tus facturas y estados de pago.</p>
         </div>
-        <a href="/facturas/nueva" className="btn btn-primary shadow-lg">
-          <span>➕</span> Nueva Factura
-        </a>
+        <Button size="lg" className="h-12 shadow-md gap-2" asChild>
+          <a href="/facturas/nueva">
+            <Plus className="w-5 h-5" /> Nueva Factura
+          </a>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-4 mb-8">
-        <Input 
-          type="text" 
-          placeholder="Buscar facturas por número o cliente..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <Select 
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          options={[
-            { value: '', label: 'Todos los estados' },
-            { value: 'draft', label: 'Borrador' },
-            { value: 'sent', label: 'Enviada' },
-            { value: 'paid', label: 'Pagada' },
-          ]}
-          className="min-w-[200px]"
-        />
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input 
+                placeholder="Buscar por número o cliente..." 
+                className="pl-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 min-w-[200px]">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <Filter className="w-4 h-4 mr-2 opacity-50" />
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="draft">Borrador</SelectItem>
+                  <SelectItem value="sent">Enviada</SelectItem>
+                  <SelectItem value="paid">Pagada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {filteredInvoices.length === 0 ? (
-        <div className="text-center p-12 text-slate-500 text-xl bg-gray-50 rounded-lg border border-dashed border-gray-300">
-          <p>📄 No se encontraron facturas.</p>
-        </div>
+        <Card className="border-dashed py-12">
+          <CardContent className="text-center text-muted-foreground">
+            No se encontraron facturas.
+          </CardContent>
+        </Card>
       ) : (
-        <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-md">
-          <table className="w-full border-collapse">
-            <thead className="bg-gray-50 border-b-2 border-gray-200">
-              <tr>
-                <th className="p-4 text-left font-semibold text-sm text-slate-800 tracking-wider">Número</th>
-                <th className="p-4 text-left font-semibold text-sm text-slate-800 tracking-wider">Cliente</th>
-                <th className="p-4 text-left font-semibold text-sm text-slate-800 tracking-wider">Fecha</th>
-                <th className="p-4 text-left font-semibold text-sm text-slate-800 tracking-wider">Vencimiento</th>
-                <th className="p-4 text-left font-semibold text-sm text-slate-800 tracking-wider">Items</th>
-                <th className="p-4 text-left font-semibold text-sm text-slate-800 tracking-wider">Total</th>
-                <th className="p-4 text-left font-semibold text-sm text-slate-800 tracking-wider">Estado</th>
-                <th className="p-4 text-left font-semibold text-sm text-slate-800 tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredInvoices.map(invoice => {
-                const statusClass = invoice.status === 'paid' ? 'badge-success' : 
-                                   invoice.status === 'sent' ? 'badge-warning' : 'badge-info';
-                const statusText = invoice.status === 'paid' ? 'Pagada' : 
-                                  invoice.status === 'sent' ? 'Enviada' : 'Borrador';
-
-                return (
-                  <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-4 text-sm font-bold text-slate-900">{invoice.invoiceNumber}</td>
-                    <td className="p-4 text-sm">
-                      <a href={`/clientes/${invoice.customerId}`} className="text-primary font-medium hover:underline">
-                        {invoice.customerName}
-                      </a>
-                    </td>
-                    <td className="p-4 text-sm text-slate-500">{new Date(invoice.date).toLocaleDateString('es-VE')}</td>
-                    <td className="p-4 text-sm text-slate-500">{new Date(invoice.dueDate).toLocaleDateString('es-VE')}</td>
-                    <td className="p-4 text-sm text-slate-500">{invoice.items.length} items</td>
-                    <td className="p-4 text-sm font-bold text-slate-900">${invoice.total.toFixed(2)}</td>
-                    <td className="p-4 text-sm"><span className={`badge ${statusClass}`}>{statusText}</span></td>
-                    <td className="p-4">
-                      <div className="flex gap-2">
-                        <button title="Cambiar Estado" className="btn btn-sm btn-outline" onClick={() => handleChangeStatus(invoice.id, invoice.status)}>
-                          📝
-                        </button>
-                        <a title="Ver Factura" href={`/facturas/${invoice.id}`} className="btn btn-sm btn-outline flex items-center justify-center">
-                          👁️
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Número</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Vencimiento</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredInvoices.map(invoice => (
+                <TableRow key={invoice.id}>
+                  <TableCell className="font-bold">{invoice.invoiceNumber}</TableCell>
+                  <TableCell>
+                    <a href={`/clientes/${invoice.customerId}`} className="text-primary hover:underline font-medium">
+                      {invoice.customerName}
+                    </a>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{new Date(invoice.date).toLocaleDateString('es-VE')}</TableCell>
+                  <TableCell className="text-muted-foreground">{new Date(invoice.dueDate).toLocaleDateString('es-VE')}</TableCell>
+                  <TableCell className="font-bold">${invoice.total.toFixed(2)}</TableCell>
+                  <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" title="Cambiar Estado" onClick={() => handleChangeStatus(invoice.id, invoice.status)}>
+                        <FileEdit className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" asChild title="Ver Factura">
+                        <a href={`/facturas/${invoice.id}`}>
+                          <Eye className="w-4 h-4" />
                         </a>
-                        <button title="Eliminar" className="btn btn-sm btn-danger" onClick={() => handleDelete(invoice.id, invoice.invoiceNumber)}>
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" title="Eliminar" onClick={() => handleDelete(invoice.id, invoice.invoiceNumber)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

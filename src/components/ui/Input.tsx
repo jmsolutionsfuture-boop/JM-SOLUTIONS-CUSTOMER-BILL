@@ -1,36 +1,22 @@
+import * as React from "react"
 
-import React from 'react';
+import { cn } from "@/lib/utils"
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement> {
-  label?: string;
-  error?: string;
-  isTextArea?: boolean;
-}
-
-export const Input: React.FC<InputProps> = ({ 
-  label, 
-  error, 
-  isTextArea = false, 
-  className = '', 
-  id,
-  ...props 
-}) => {
-  const Component = isTextArea ? 'textarea' : 'input';
-  const baseStyles = isTextArea ? 'form-textarea' : 'form-input';
-  
-  return (
-    <div className="form-group">
-      {label && (
-        <label htmlFor={id} className="form-label font-semibold">
-          {label}
-        </label>
-      )}
-      <Component
-        id={id}
-        className={`${baseStyles} ${error ? 'border-error' : ''} ${className}`}
-        {...(props as any)}
+const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          className
+        )}
+        ref={ref}
+        {...props}
       />
-      {error && <p className="text-error text-xs mt-1">{error}</p>}
-    </div>
-  );
-};
+    )
+  }
+)
+Input.displayName = "Input"
+
+export { Input }

@@ -1,4 +1,6 @@
 ---
+import '../styles/global.css';
+
 interface Props {
   title: string;
   description?: string;
@@ -16,12 +18,7 @@ const { title, description = 'Sistema de Facturación Digital' } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
   </head>
-  <body>
+  <body class="min-h-screen bg-background font-sans antialiased">
     <slot />
   </body>
 </html>
-
-
-<style is:global>
-  @import '../styles/global.css';
-</style>

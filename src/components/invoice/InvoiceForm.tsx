@@ -1,12 +1,30 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useStorage } from '../../hooks/useStorage';
-import { Card } from '../ui/Card';
-import { Input } from '../ui/Input';
-import { Select } from '../ui/Select';
-import { Button } from '../ui/Button';
+import { useStorage } from '@/hooks/useStorage';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import InvoiceTemplate from './InvoiceTemplate';
-import type { InvoiceItem, Customer, Invoice } from '../../scripts/storage';
+import type { InvoiceItem, Customer, Invoice } from '@/scripts/storage';
+import { Plus, Trash2, Save, XCircle } from 'lucide-react';
 
 export const InvoiceForm: React.FC = () => {
   const { 
@@ -136,187 +154,219 @@ export const InvoiceForm: React.FC = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+    <div className="grid grid-cols-1 xl:grid-cols-[1fr,500px] gap-8 pb-12">
       {/* Form Side */}
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6">
         <div className="flex justify-between items-center gap-6">
-           <h2 className="text-2xl font-bold">Datos de Factura</h2>
-           <div className="flex gap-4">
-            <Button variant="secondary" onClick={handleCancel}>Cancelar</Button>
-            <Button variant="primary" onClick={handleSubmit}>✅ Guardar Factura</Button>
+           <div>
+             <h2 className="text-2xl font-bold">Nueva Factura</h2>
+             <p className="text-muted-foreground text-sm">Completa los campos para generar el documento.</p>
+           </div>
+           <div className="flex gap-3">
+            <Button variant="outline" onClick={handleCancel}>
+              <XCircle className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit}>
+              <Save className="w-4 h-4 mr-2" />
+              Guardar Factura
+            </Button>
            </div>
         </div>
 
-        <Card title="Información del Cliente">
-          <Select 
-            label="Seleccionar Cliente *"
-            value={selectedCustomerId}
-            onChange={(e) => handleCustomerChange(e.target.value)}
-            options={[
-              { value: '', label: '-- Seleccionar un cliente --' },
-              ...customers.map(c => ({ value: c.id, label: `${c.name} (${c.rif})` }))
-            ]}
-          />
-          {selectedCustomer && (
-            <div className="mt-6 p-6 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xl shrink-0">
-                  {selectedCustomer.name.charAt(0).toUpperCase()}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Información del Cliente</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-2">
+                <Label>Seleccionar Cliente *</Label>
+                <Select value={selectedCustomerId} onValueChange={handleCustomerChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Busca un cliente..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name} ({c.rif})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {selectedCustomer && (
+                <div className="p-4 bg-muted/50 rounded-lg border text-sm">
+                  <p className="font-bold flex items-center justify-between">
+                    {selectedCustomer.name}
+                    <Badge variant="outline">{selectedCustomer.rif}</Badge>
+                  </p>
+                  <p className="text-muted-foreground mt-1">{selectedCustomer.email}</p>
+                  <p className="text-muted-foreground">{selectedCustomer.phone}</p>
+                  <p className="text-muted-foreground truncate italic mt-2">{selectedCustomer.address}</p>
                 </div>
-                <div className="flex flex-col gap-1 overflow-hidden">
-                  <strong className="text-slate-900 text-lg">{selectedCustomer.name}</strong>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 font-medium">
-                    <span>RIF: {selectedCustomer.rif}</span>
-                    <span>📧 {selectedCustomer.email}</span>
-                    <span>📱 {selectedCustomer.phone}</span>
-                  </div>
-                  <p className="m-0 text-sm text-slate-400 italic line-clamp-1 mt-1">📍 {selectedCustomer.address}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Detalles Legales</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Nº Factura</Label>
+                  <Input value={invoiceData.invoiceNumber} readOnly className="bg-muted font-bold" />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Estado</Label>
+                  <Select 
+                    value={invoiceData.status} 
+                    onValueChange={(v) => setInvoiceData(prev => ({ ...prev, status: v as any }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Borrador</SelectItem>
+                      <SelectItem value="sent">Enviada</SelectItem>
+                      <SelectItem value="paid">Pagada</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            </div>
-          )}
-        </Card>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Emisión</Label>
+                  <Input 
+                    type="date" 
+                    value={invoiceData.date}
+                    onChange={(e) => setInvoiceData(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Vencimiento</Label>
+                  <Input 
+                    type="date" 
+                    value={invoiceData.dueDate}
+                    onChange={(e) => setInvoiceData(prev => ({ ...prev, dueDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card title="Detalles de Facturación">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input 
-              label="Número de Factura" 
-              value={invoiceData.invoiceNumber} 
-              readOnly 
-              className="font-bold text-primary bg-slate-50" 
-            />
-            <Select 
-              label="Estado"
-              value={invoiceData.status}
-              onChange={(e) => setInvoiceData(prev => ({ ...prev, status: e.target.value as any }))}
-              options={[
-                { value: 'draft', label: 'Borrador' },
-                { value: 'sent', label: 'Enviada' },
-                { value: 'paid', label: 'Pagada' },
-              ]}
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-            <Input 
-              label="Fecha de Emisión *" 
-              type="date" 
-              value={invoiceData.date}
-              onChange={(e) => setInvoiceData(prev => ({ ...prev, date: e.target.value }))}
-              required 
-            />
-            <Input 
-              label="Fecha de Vencimiento *" 
-              type="date" 
-              value={invoiceData.dueDate}
-              onChange={(e) => setInvoiceData(prev => ({ ...prev, dueDate: e.target.value }))}
-              required 
-            />
-          </div>
-        </Card>
-
-        <Card title="Items y Servicios">
-          <div className="overflow-x-auto bg-slate-50 rounded-xl border border-slate-200">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-slate-100 text-[10px] uppercase tracking-widest font-bold text-slate-500">
-                  <th className="p-4 text-left">Descripción</th>
-                  <th className="p-4 text-center w-24">Cant.</th>
-                  <th className="p-4 text-right w-32">Precio Unit.</th>
-                  <th className="p-4 text-right w-32">Total</th>
-                  <th className="p-4 text-center w-16"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-lg font-bold">Items del Recibo</CardTitle>
+            <Button variant="outline" size="sm" onClick={addItem}>
+              <Plus className="w-4 h-4 mr-2" />
+              Agregar Item
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead className="w-24 text-center">Cant.</TableHead>
+                  <TableHead className="w-32 text-right">Precio</TableHead>
+                  <TableHead className="w-32 text-right">Total</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {items.map((item) => (
-                  <tr key={item.id} className="group hover:bg-slate-50 transition-colors">
-                    <td className="p-2">
-                      <textarea 
-                        className="form-input !bg-transparent border-transparent group-hover:border-slate-200 focus:border-primary !px-3 font-medium text-slate-700" 
-                        placeholder="Descripción del servicio..."
-                        rows={1}
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <Input 
+                        placeholder="Descripción..." 
+                        className="h-8 border-transparent hover:border-input focus:border-input bg-transparent"
                         value={item.description}
                         onChange={(e) => updateItem(item.id, 'description', e.target.value)}
                       />
-                    </td>
-                    <td className="p-2">
-                      <input 
+                    </TableCell>
+                    <TableCell>
+                      <Input 
                         type="number" 
-                        className="form-input !bg-transparent border-transparent group-hover:border-slate-200 focus:border-primary !text-center !px-1" 
+                        className="h-8 text-center"
                         value={item.quantity}
-                        min="0"
-                        step="0.01"
                         onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
                       />
-                    </td>
-                    <td className="p-2">
-                      <input 
+                    </TableCell>
+                    <TableCell>
+                      <Input 
                         type="number" 
-                        className="form-input !bg-transparent border-transparent group-hover:border-slate-200 focus:border-primary !text-right !px-1" 
+                        className="h-8 text-right font-mono"
                         value={item.unitPrice}
-                        min="0"
-                        step="0.01"
                         onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)}
                       />
-                    </td>
-                    <td className="p-4 text-right font-bold text-slate-900">
+                    </TableCell>
+                    <TableCell className="text-right font-bold">
                       ${item.total.toFixed(2)}
-                    </td>
-                    <td className="p-2 text-center">
-                      <button 
-                        type="button" 
-                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-error/10 text-slate-300 hover:text-error transition-all"
+                    </TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         onClick={() => removeItem(item.id)}
-                      >✕</button>
-                    </td>
-                  </tr>
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          
-          <div className="mt-4 flex justify-between items-center">
-            <Button variant="secondary" size="sm" onClick={addItem}>➕ Agregar Item</Button>
-          </div>
+              </TableBody>
+            </Table>
 
-          <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col items-end gap-3 px-4">
-            <div className="flex justify-between w-full max-w-[240px] text-slate-500 font-medium">
-              <span>Subtotal:</span>
-              <span>${subtotal.toFixed(2)}</span>
+            <div className="mt-6 flex flex-col items-end gap-2 px-4 py-4 bg-muted/20 rounded-lg">
+              <div className="flex justify-between w-64 text-sm text-muted-foreground">
+                <span>Subtotal:</span>
+                <span>${subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between w-64 text-sm text-muted-foreground">
+                <span>IVA ({settings.taxPercentage}%):</span>
+                <span>${tax.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between w-64 text-xl font-bold pt-2 border-t mt-2">
+                <span>Total:</span>
+                <span className="text-primary">${total.toFixed(2)}</span>
+              </div>
             </div>
-            <div className="flex justify-between w-full max-w-[240px] text-slate-500 font-medium">
-              <span>IVA ({settings.taxPercentage}%):</span>
-              <span>${tax.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between w-full max-w-[240px] text-2xl font-bold text-slate-900 pt-4 border-t-2 border-slate-100">
-              <span>Total:</span>
-              <span className="text-primary">${total.toFixed(2)}</span>
-            </div>
-          </div>
+          </CardContent>
         </Card>
 
-        <Card title="Notas Adicionales">
-          <textarea 
-            className="form-textarea h-32" 
-            placeholder="Términos de pago, información bancaria o agradecimientos..."
-            value={invoiceData.notes}
-            onChange={(e) => setInvoiceData(prev => ({ ...prev, notes: e.target.value }))}
-          />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-bold">Notas Adicionales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea 
+              className="min-h-[100px]"
+              placeholder="Escribe términos de pago, agradecimientos o notas importantes..."
+              value={invoiceData.notes}
+              onChange={(e) => setInvoiceData(prev => ({ ...prev, notes: e.target.value }))}
+            />
+          </CardContent>
         </Card>
       </div>
 
       {/* Preview Side */}
-      <div className="sticky top-28 h-fit">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-slate-900 shrink-0 font-primary">Vista Previa Real</h2>
-          <div className="h-1 flex-grow mx-6 bg-slate-100 rounded-full"></div>
-          <span className="badge badge-info whitespace-nowrap">Actualización Automática</span>
-        </div>
-        <div className="bg-slate-200/50 p-8 rounded-2xl shadow-inner border border-slate-200 flex justify-center min-h-[900px] overflow-auto">
-          <InvoiceTemplate 
-            invoice={{ ...invoiceData, items, subtotal, tax, total } as any} 
-            businessSettings={settings} 
-            customer={selectedCustomer} 
-          />
+      <div className="h-fit sticky top-28">
+        <h3 className="text-lg font-bold mb-4 flex items-center justify-between">
+          Vista Previa
+          <Badge variant="secondary">Renderizado Real</Badge>
+        </h3>
+        <div className="bg-slate-200 p-8 rounded-xl shadow-inner overflow-auto max-h-[80vh] flex justify-center">
+          <div className="scale-[0.8] origin-top">
+            <InvoiceTemplate 
+              invoice={{ ...invoiceData, items, subtotal, tax, total } as any} 
+              businessSettings={settings} 
+              customer={selectedCustomer} 
+            />
+          </div>
         </div>
       </div>
     </div>

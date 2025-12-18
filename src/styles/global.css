@@ -5,54 +5,122 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
-  html {
-    @apply font-sans;
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --primary-dark: 221.2 83.2% 43.3%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --success: 142.1 70.6% 45.3%;
+    --warning: 37.9 90.2% 50%;
+    --error: 0 84.2% 60.2%;
+    --info: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-dark: 217.2 91.2% 49.8%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+
+    --success: 142.1 70.6% 45.3%;
+    --warning: 37.9 90.2% 50%;
+    --error: 0 62.8% 30.6%;
+    --info: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
   }
 }
 
 @layer components {
-  /* Common component abstractions for smoother migration */
   .btn {
-    @apply inline-flex items-center gap-2 px-6 py-2 rounded-md font-medium text-sm transition-all cursor-pointer no-underline active:scale-95;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-2 rounded-md font-medium text-sm transition-all cursor-pointer no-underline active:scale-95;
   }
   .btn-primary {
-    @apply bg-gradient-to-br from-primary to-primary-light text-white hover:from-primary-dark hover:to-primary hover:shadow-md;
+    @apply bg-primary text-primary-foreground hover:opacity-90 hover:shadow-md;
   }
   .btn-secondary {
-    @apply bg-gray-50 text-slate-900 border border-gray-200 hover:bg-gray-100;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
   .btn-outline {
-    @apply bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-white;
+    @apply bg-transparent text-primary border-2 border-primary hover:bg-primary/10;
   }
   .btn-danger {
-    @apply bg-error text-white hover:brightness-90;
+    @apply bg-destructive text-destructive-foreground hover:opacity-90;
   }
   .btn-success {
     @apply bg-success text-white hover:brightness-90;
   }
   .btn-sm {
-      @apply px-2 py-1 text-xs;
+    @apply h-9 px-3;
   }
 
   .card {
-    @apply bg-white border border-gray-200 rounded-lg p-6 shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5;
+    @apply bg-card text-card-foreground border border-border shadow-sm transition-all hover:shadow-md;
   }
 
-  .form-group {
-    @apply mb-4;
-  }
-  .form-label {
-    @apply block text-sm font-medium text-slate-800 mb-1.5;
-  }
-  .form-input, .form-select, .form-textarea {
-    @apply w-full px-4 py-2 border border-gray-200 rounded-md text-sm bg-white text-slate-900 transition-all focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10;
-  }
-  
   .badge {
-      @apply inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
   }
-  .badge-success { @apply bg-success/10 text-success; }
-  .badge-warning { @apply bg-warning/10 text-warning; }
-  .badge-error { @apply bg-error/10 text-error; }
-  .badge-info { @apply bg-info/10 text-info; }
+  .badge-success { @apply bg-success/10 text-success border border-success/20; }
+  .badge-warning { @apply bg-warning/10 text-warning border border-warning/20; }
+  .badge-error { @apply bg-error/10 text-error border border-error/20; }
+  .badge-info { @apply bg-info/10 text-info border border-info/20; }
 }

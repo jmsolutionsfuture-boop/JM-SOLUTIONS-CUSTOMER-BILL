@@ -1,10 +1,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useStorage } from '../../hooks/useStorage';
-import { Card } from '../ui/Card';
-import { Input } from '../ui/Input';
-import { Select } from '../ui/Select';
-import { Button } from '../ui/Button';
+import { useStorage } from '@/hooks/useStorage';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export const BusinessSettingsForm: React.FC = () => {
   const { settings, saveSettings, clearAll } = useStorage();
@@ -21,12 +29,17 @@ export const BusinessSettingsForm: React.FC = () => {
     setSignaturePreview(settings.signature);
   }, [settings]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
+    const field = id.replace('business-', '');
     setFormData(prev => ({
       ...prev,
-      [id.replace('business-', '')]: id === 'business-tax' ? parseFloat(value) : value
+      [field]: field === 'taxPercentage' ? parseFloat(value) : value
     }));
+  };
+
+  const handleCurrencyChange = (value: string) => {
+    setFormData(prev => ({ ...prev, currency: value }));
   };
 
   const convertImageToBase64 = (file: File): Promise<string> => {
@@ -83,150 +96,185 @@ export const BusinessSettingsForm: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <Card title="Información de la Empresa">
-        <form id="business-form" className="space-y-6" onSubmit={handleSubmit}>
-          <Input 
-            label="Nombre de la Empresa *" 
-            id="business-name" 
-            value={formData.name} 
-            onChange={handleChange} 
-            required 
-          />
-          <Input 
-            label="RIF *" 
-            id="business-rif" 
-            value={formData.rif} 
-            onChange={handleChange} 
-            required 
-            placeholder="J-12345678-9" 
-          />
-          <Input 
-            label="Dirección *" 
-            id="business-address" 
-            value={formData.address} 
-            onChange={handleChange} 
-            required 
-            isTextArea 
-          />
+    <div className="flex flex-col gap-8 pb-12">
+      <Card>
+        <CardHeader>
+          <CardTitle>Información de la Empresa</CardTitle>
+          <CardDescription>Detalles básicos de tu negocio para las facturas.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form id="business-form" className="space-y-6" onSubmit={handleSubmit}>
+            <div className="grid gap-2">
+              <Label htmlFor="business-name">Nombre de la Empresa *</Label>
+              <Input 
+                id="business-name" 
+                value={formData.name} 
+                onChange={handleChange} 
+                required 
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="business-rif">RIF *</Label>
+              <Input 
+                id="business-rif" 
+                value={formData.rif} 
+                onChange={handleChange} 
+                required 
+                placeholder="J-12345678-9" 
+              />
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input 
-              label="Teléfono *" 
-              id="business-phone" 
-              type="tel" 
-              value={formData.phone} 
-              onChange={handleChange} 
-              required 
-              placeholder="+58 412-0000000" 
-            />
-            <Input 
-              label="Email *" 
-              id="business-email" 
-              type="email" 
-              value={formData.email} 
-              onChange={handleChange} 
-              required 
-            />
-          </div>
+            <div className="grid gap-2">
+              <Label htmlFor="business-address">Dirección *</Label>
+              <Textarea 
+                id="business-address" 
+                value={formData.address} 
+                onChange={handleChange} 
+                required 
+              />
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input 
-              label="IVA (%)" 
-              id="business-tax" 
-              type="number" 
-              value={formData.taxPercentage} 
-              onChange={handleChange} 
-              min="0" 
-              max="100" 
-              step="0.1" 
-            />
-            <Select 
-              label="Moneda" 
-              id="business-currency" 
-              value={formData.currency} 
-              onChange={handleChange}
-              options={[
-                { value: 'USD', label: 'USD ($)' },
-                { value: 'Bs', label: 'Bs (Bolívares)' },
-                { value: 'EUR', label: 'EUR (€)' },
-              ]}
-            />
-          </div>
-        </form>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="business-phone">Teléfono *</Label>
+                <Input 
+                  id="business-phone" 
+                  type="tel" 
+                  value={formData.phone} 
+                  onChange={handleChange} 
+                  required 
+                  placeholder="+58 412-0000000" 
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="business-email">Email *</Label>
+                <Input 
+                  id="business-email" 
+                  type="email" 
+                  value={formData.email} 
+                  onChange={handleChange} 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="business-taxPercentage">IVA (%)</Label>
+                <Input 
+                  id="business-taxPercentage" 
+                  type="number" 
+                  value={formData.taxPercentage} 
+                  onChange={handleChange} 
+                  min="0" 
+                  max="100" 
+                  step="0.1" 
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Moneda</Label>
+                <Select value={formData.currency} onValueChange={handleCurrencyChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar moneda" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="Bs">Bs (Bolívares)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </form>
+        </CardContent>
       </Card>
 
-      <Card title="Logo de la Empresa" subtitle="Sube el logo de tu empresa (opcional)">
-        <div className="flex flex-col gap-6 items-center">
-          <div className="w-[240px] h-[160px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
-            {logoPreview ? (
-              <img src={logoPreview} alt="Logo" className="max-w-full max-h-full object-contain" />
-            ) : (
-              <p className="text-slate-400">Sin logo</p>
-            )}
-          </div>
-          <div className="flex gap-4">
-            <input 
-              type="file" 
-              ref={logoInputRef} 
-              onChange={handleLogoChange} 
-              accept="image/*" 
-              className="hidden" 
-            />
-            <Button variant="secondary" onClick={() => logoInputRef.current?.click()}>
-              📁 Seleccionar Logo
-            </Button>
-            {logoPreview && (
-              <Button variant="danger" onClick={handleRemoveLogo}>
-                🗑️ Eliminar Logo
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Logo de la Empresa</CardTitle>
+            <CardDescription>Sube el logo de tu empresa (opcional)</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-6 items-center">
+            <div className="w-full aspect-video border-2 border-dashed border-muted rounded-lg flex items-center justify-center bg-muted/30 overflow-hidden">
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo" className="max-w-full max-h-full object-contain" />
+              ) : (
+                <p className="text-muted-foreground text-sm">Sin logo</p>
+              )}
+            </div>
+            <div className="flex gap-4">
+              <input 
+                type="file" 
+                ref={logoInputRef} 
+                onChange={handleLogoChange} 
+                accept="image/*" 
+                className="hidden" 
+              />
+              <Button variant="outline" onClick={() => logoInputRef.current?.click()}>
+                Seleccionar Logo
               </Button>
-            )}
-          </div>
-        </div>
-      </Card>
+              {logoPreview && (
+                <Button variant="destructive" onClick={handleRemoveLogo}>
+                  Eliminar
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card title="Firma Digital" subtitle="Sube tu firma que aparecerá en las facturas">
-        <div className="flex flex-col gap-6 items-center">
-          <div className="w-[240px] h-[160px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
-            {signaturePreview ? (
-              <img src={signaturePreview} alt="Firma" className="max-w-full max-h-full object-contain" />
-            ) : (
-              <p className="text-slate-400">Sin firma</p>
-            )}
-          </div>
-          <div className="flex gap-4">
-            <input 
-              type="file" 
-              ref={signatureInputRef} 
-              onChange={handleSignatureChange} 
-              accept="image/*" 
-              className="hidden" 
-            />
-            <Button variant="secondary" onClick={() => signatureInputRef.current?.click()}>
-              📁 Seleccionar Firma
-            </Button>
-            {signaturePreview && (
-              <Button variant="danger" onClick={handleRemoveSignature}>
-                🗑️ Eliminar Firma
+        <Card>
+          <CardHeader>
+            <CardTitle>Firma Digital</CardTitle>
+            <CardDescription>Sube tu firma para las facturas</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-6 items-center">
+            <div className="w-full aspect-video border-2 border-dashed border-muted rounded-lg flex items-center justify-center bg-muted/30 overflow-hidden">
+              {signaturePreview ? (
+                <img src={signaturePreview} alt="Firma" className="max-w-full max-h-full object-contain" />
+              ) : (
+                <p className="text-muted-foreground text-sm">Sin firma</p>
+              )}
+            </div>
+            <div className="flex gap-4">
+              <input 
+                type="file" 
+                ref={signatureInputRef} 
+                onChange={handleSignatureChange} 
+                accept="image/*" 
+                className="hidden" 
+              />
+              <Button variant="outline" onClick={() => signatureInputRef.current?.click()}>
+                Seleccionar Firma
               </Button>
-            )}
-          </div>
-        </div>
-      </Card>
+              {signaturePreview && (
+                <Button variant="destructive" onClick={handleRemoveSignature}>
+                  Eliminar
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <div className="mt-12 flex justify-center">
-        <Button size="lg" className="min-w-[250px] !py-4" variant="success" onClick={handleSubmit}>
-          💾 Guardar Configuración
+      <div className="flex justify-center pt-4">
+        <Button size="lg" className="min-w-[250px]" onClick={handleSubmit}>
+           Guardar Configuración
         </Button>
       </div>
 
-      <div className="mt-12 p-8 border-2 border-error rounded-xl text-center">
-        <h3 className="text-error text-xl font-bold mb-2">⚠️ Zona de Peligro</h3>
-        <p className="text-slate-500 mb-6">Estas acciones son irreversibles</p>
-        <Button variant="danger" onClick={handleClearAll}>
-          🗑️ Eliminar Todos los Datos
-        </Button>
-      </div>
+      <Card className="border-destructive/50 bg-destructive/5">
+        <CardHeader>
+          <CardTitle className="text-destructive">Zona de Peligro</CardTitle>
+          <CardDescription>Estas acciones son irreversibles</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={handleClearAll}>
+            Eliminar Todos los Datos
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };

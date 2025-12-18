@@ -1,33 +1,39 @@
 
 import React from 'react';
-import { useStorage } from '../../hooks/useStorage';
+import { useStorage } from '@/hooks/useStorage';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Receipt, Users, Clock, CheckCircle } from 'lucide-react';
 
 export const StatsGrid: React.FC = () => {
   const { invoices, customers } = useStorage();
 
-  const paidCount = invoices.filter(inv => inv.status === 'paid').length;
-  const pendingCount = invoices.filter(inv => inv.status === 'draft' || inv.status === 'sent').length;
+  const totalInvoices = invoices.length;
+  const paidInvoices = invoices.filter(inv => inv.status === 'paid').length;
+  const pendingInvoices = invoices.filter(inv => inv.status !== 'paid').length;
+  const totalCustomers = customers.length;
 
   const stats = [
-    { label: 'Facturas Totales', value: invoices.length, icon: '📄', color: 'from-blue-500 to-blue-800' },
-    { label: 'Facturas Pagadas', value: paidCount, icon: '✅', color: 'from-emerald-500 to-emerald-800' },
-    { label: 'Facturas Pendientes', value: pendingCount, icon: '⏳', color: 'from-amber-500 to-amber-800' },
-    { label: 'Clientes', value: customers.length, icon: '👥', color: 'from-violet-500 to-violet-800' },
+    { title: 'Facturas Totales', value: totalInvoices, icon: Receipt, color: 'text-primary' },
+    { title: 'Cobradas', value: paidInvoices, icon: CheckCircle, color: 'text-green-600' },
+    { title: 'Pendientes', value: pendingInvoices, icon: Clock, color: 'text-amber-500' },
+    { title: 'Clientes', value: totalCustomers, icon: Users, color: 'text-indigo-600' },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-      {stats.map((stat, i) => (
-        <div key={i} className="card flex items-center gap-6">
-          <div className={`w-15 h-15 shrink-0 rounded-lg flex items-center justify-center text-3xl bg-gradient-to-br ${stat.color} text-white`}>
-            {stat.icon}
-          </div>
-          <div>
-            <h3 className="text-3xl font-bold mb-1">{stat.value}</h3>
-            <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">{stat.label}</p>
-          </div>
-        </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      {stats.map((stat, idx) => (
+        <Card key={idx} className="hover:shadow-lg transition-all">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+            <stat.icon className={`h-4 w-4 ${stat.color}`} />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stat.value}</div>
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
 };
+
+export default StatsGrid;

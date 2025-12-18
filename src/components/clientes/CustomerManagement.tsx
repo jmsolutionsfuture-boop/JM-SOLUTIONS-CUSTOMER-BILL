@@ -1,10 +1,22 @@
 
 import React, { useState, useMemo } from 'react';
-import { useStorage } from '../../hooks/useStorage';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Card } from '../ui/Card';
-import type { Customer } from '../../scripts/storage';
+import { useStorage } from '@/hooks/useStorage';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import type { Customer } from '@/scripts/storage';
+import { Plus, Search, Mail, Phone, MapPin, User, Edit2, Trash2, ArrowRight } from 'lucide-react';
 
 export const CustomerManagement: React.FC = () => {
   const { customers, invoices, saveCustomer, updateCustomer, deleteCustomer } = useStorage();
@@ -69,142 +81,169 @@ export const CustomerManagement: React.FC = () => {
   };
 
   return (
-    <div>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-bold mb-2">Clientes</h1>
-          <p className="text-slate-500 text-lg">Gestiona tus clientes y visualiza sus facturas</p>
+          <h1 className="text-4xl font-extrabold tracking-tight">Clientes</h1>
+          <p className="text-muted-foreground text-lg">Gestiona tu cartera de clientes y sus historiales.</p>
         </div>
-        <Button variant="primary" size="lg" className="shadow-lg" onClick={() => handleOpenModal()}>
-          <span>➕</span> Nuevo Cliente
+        <Button size="lg" className="h-12 shadow-md gap-2" onClick={() => handleOpenModal()}>
+          <Plus className="w-5 h-5" /> Nuevo Cliente
         </Button>
       </div>
 
-      <div className="mb-12">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
         <Input 
-          type="text" 
           placeholder="Buscar clientes por nombre, RIF o email..." 
-          className="text-lg py-3 shadow-sm focus:shadow-md"
+          className="pl-10 h-14 text-lg shadow-sm border-muted focus:border-primary transition-all"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
       {filteredCustomers.length === 0 ? (
-        <div className="text-center p-20 text-slate-500 text-xl bg-gray-50 rounded-xl border-4 border-dashed border-gray-200">
-          <p>😊 No hay clientes que coincidan con la búsqueda.</p>
-        </div>
+        <Card className="border-dashed py-20 bg-muted/30">
+          <CardContent className="text-center">
+            <User className="w-16 h-16 mx-auto text-muted mb-4 opacity-50" />
+            <p className="text-xl font-medium text-muted-foreground">No se encontraron clientes que coincidan.</p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCustomers.map(customer => {
             const customerInvoices = invoices.filter(inv => inv.customerId === customer.id);
             const totalAmount = customerInvoices.reduce((sum, inv) => sum + inv.total, 0);
 
             return (
-              <Card key={customer.id} className="flex flex-col hover:-translate-y-2 transition-all duration-300">
-                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-light text-white flex items-center justify-center text-xl font-bold shadow-inner shrink-0">
-                    {customer.name.charAt(0).toUpperCase()}
+              <Card key={customer.id} className="group hover:border-primary/50 transition-all duration-300">
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold">
+                        {customer.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="overflow-hidden">
+                        <CardTitle className="text-lg truncate max-w-[150px]" title={customer.name}>{customer.name}</CardTitle>
+                        <Badge variant="secondary" className="mt-1">{customer.rif}</Badge>
+                      </div>
+                    </div>
                   </div>
-                  <div className="overflow-hidden">
-                    <h3 className="text-xl font-bold text-slate-900 truncate" title={customer.name}>{customer.name}</h3>
-                    <p className="text-sm text-slate-500 font-medium">{customer.rif}</p>
-                  </div>
-                </div>
+                </CardHeader>
                 
-                <div className="space-y-3 mb-6 flex-grow">
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <span className="w-5 text-center">📧</span>
+                <CardContent className="space-y-3 py-4 border-t border-b border-muted/50">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <Mail className="w-4 h-4" />
                     <span className="truncate">{customer.email}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <span className="w-5 text-center">📱</span>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <Phone className="w-4 h-4" />
                     <span>{customer.phone}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <span className="w-5 text-center">📍</span>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <MapPin className="w-4 h-4 shrink-0" />
                     <span className="line-clamp-1">{customer.address}</span>
                   </div>
-                </div>
+                </CardContent>
 
-                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl mb-6">
+                <div className="grid grid-cols-2 gap-4 px-6 py-4 bg-muted/20">
                   <div className="text-center">
-                    <span className="block text-2xl font-bold text-primary">{customerInvoices.length}</span>
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Facturas</span>
+                    <span className="block text-xl font-bold text-foreground">{customerInvoices.length}</span>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground">Facturas</span>
                   </div>
-                  <div className="text-center border-l border-slate-200">
-                    <span className="block text-xl font-bold text-primary">${totalAmount.toFixed(2)}</span>
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Total</span>
+                  <div className="text-center border-l border-muted">
+                    <span className="block text-lg font-bold text-primary">${totalAmount.toLocaleString()}</span>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground">Inversión</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-auto">
-                  <a href={`/clientes/${customer.id}`} className="btn btn-outline py-2 text-xs justify-center col-span-2 mb-2">Ver Detalle y Facturas</a>
-                  <Button variant="secondary" className="py-2 text-xs justify-center" onClick={() => handleOpenModal(customer)}>Editar</Button>
-                  <Button variant="danger" className="py-2 text-xs justify-center opacity-70 hover:opacity-100" onClick={() => handleDelete(customer.id, customer.name)}>Eliminar</Button>
-                </div>
+                <CardFooter className="pt-4 grid grid-cols-2 gap-2">
+                  <Button asChild variant="ghost" size="sm" className="col-span-2 group/btn">
+                    <a href={`/clientes/${customer.id}`} className="flex items-center justify-center gap-2">
+                       Ver Detalle <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleOpenModal(customer)}>
+                    <Edit2 className="w-4 h-4 mr-2" /> Editar
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(customer.id, customer.name)}>
+                    <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+                  </Button>
+                </CardFooter>
               </Card>
             );
           })}
         </div>
       )}
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[1000] flex items-center justify-center p-6" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-[600px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
-            <div className="px-8 py-6 border-b flex justify-between items-center bg-gray-50">
-              <h2 className="text-2xl font-bold text-slate-900">{editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
-              <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-200 text-slate-500 transition-colors" onClick={() => setIsModalOpen(false)}>✕</button>
+      {/* shadcn Dialog */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">{editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}</DialogTitle>
+            <DialogDescription>
+              Completa los datos del cliente para su gestión y facturación.
+            </DialogDescription>
+          </DialogHeader>
+          <form id="customer-form" className="space-y-6 pt-4" onSubmit={handleSubmit}>
+            <div className="grid gap-2">
+              <Label htmlFor="name">Nombre Completo *</Label>
+              <Input 
+                id="name"
+                value={formData.name} 
+                onChange={e => setFormData({...formData, name: e.target.value})} 
+                required 
+              />
             </div>
-            <div className="p-8">
-              <form id="customer-form" className="space-y-6" onSubmit={handleSubmit}>
+            <div className="grid gap-2">
+              <Label htmlFor="rif">RIF / Cédula *</Label>
+              <Input 
+                id="rif"
+                value={formData.rif} 
+                onChange={e => setFormData({...formData, rif: e.target.value})} 
+                required 
+                placeholder="J-12345678-9" 
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email *</Label>
                 <Input 
-                  label="Nombre *" 
-                  value={formData.name} 
-                  onChange={e => setFormData({...formData, name: e.target.value})} 
+                  id="email"
+                  type="email" 
+                  value={formData.email} 
+                  onChange={e => setFormData({...formData, email: e.target.value})} 
                   required 
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Teléfono *</Label>
                 <Input 
-                  label="RIF / Cédula *" 
-                  value={formData.rif} 
-                  onChange={e => setFormData({...formData, rif: e.target.value})} 
+                  id="phone"
+                  type="tel" 
+                  value={formData.phone} 
+                  onChange={e => setFormData({...formData, phone: e.target.value})} 
                   required 
-                  placeholder="J-12345678-9" 
+                  placeholder="+58 412-0000000" 
                 />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input 
-                    label="Email *" 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={e => setFormData({...formData, email: e.target.value})} 
-                    required 
-                  />
-                  <Input 
-                    label="Teléfono *" 
-                    type="tel" 
-                    value={formData.phone} 
-                    onChange={e => setFormData({...formData, phone: e.target.value})} 
-                    required 
-                    placeholder="+58 412-0000000" 
-                  />
-                </div>
-                <Input 
-                  label="Dirección *" 
-                  isTextArea 
-                  value={formData.address} 
-                  onChange={e => setFormData({...formData, address: e.target.value})} 
-                  required 
-                />
-              </form>
+              </div>
             </div>
-            <div className="px-8 py-6 border-t bg-gray-50 flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-              <Button variant="primary" type="submit" form="customer-form">Guardar Cliente</Button>
+            <div className="grid gap-2">
+              <Label htmlFor="address">Dirección *</Label>
+              <Textarea 
+                id="address"
+                value={formData.address} 
+                onChange={e => setFormData({...formData, address: e.target.value})} 
+                required 
+              />
             </div>
-          </div>
-        </div>
-      )}
+          </form>
+          <DialogFooter className="pt-6 border-t">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+            <Button type="submit" form="customer-form">Guardar Cliente</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
