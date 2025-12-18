@@ -8,19 +8,22 @@ const { id } = Astro.params;
 <Layout title="Detalle Cliente - Facturador Digital">
   <Navbar currentPath="/clientes" />
   
-  <main class="container" data-customer-id={id}>
-    <div class="breadcrumb">
-      <a href="/clientes">← Volver a Clientes</a>
+  
+  <main class="max-w-[1280px] mx-auto px-6 py-12" data-customer-id={id}>
+    <div class="mb-8">
+      <a href="/clientes" class="text-primary font-medium hover:underline flex items-center gap-2">
+        <span>←</span> Volver a Clientes
+      </a>
     </div>
 
     <div id="customer-detail">
       <!-- Customer detail will be loaded here -->
     </div>
 
-    <div class="invoices-section">
-      <div class="section-header">
-        <h2>Facturas del Cliente</h2>
-        <a href={`/facturas/nueva?customerId=${id}`} class="btn btn-primary">
+    <div class="mt-16">
+      <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-100">
+        <h2 class="text-2xl font-bold text-slate-900">Facturas del Cliente</h2>
+        <a href={`/facturas/nueva?customerId=${id}`} class="btn btn-primary shadow-md">
           <span>➕</span>
           Nueva Factura
         </a>
@@ -30,7 +33,7 @@ const { id } = Astro.params;
         <!-- Invoices will be loaded here -->
       </div>
 
-      <div id="no-invoices" class="empty-state" style="display: none;">
+      <div id="no-invoices" class="hidden text-center p-12 text-slate-500 italic bg-gray-50 rounded-lg border border-dashed border-gray-300">
         <p>Este cliente no tiene facturas aún.</p>
       </div>
     </div>
@@ -55,8 +58,8 @@ const { id } = Astro.params;
     if (!customer || !detailContainer) {
       if (detailContainer) {
         detailContainer.innerHTML = `
-          <div class="error-message">
-            <h2>Cliente no encontrado</h2>
+          <div class="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 font-primary">Cliente no encontrado</h2>
             <a href="/clientes" class="btn btn-primary">Volver a Clientes</a>
           </div>
         `;
@@ -74,50 +77,54 @@ const { id } = Astro.params;
 
     if (detailContainer) {
       detailContainer.innerHTML = `
-      <div class="customer-detail-card glass-card">
-        <div class="customer-header">
-          <div class="customer-avatar-large">${customer.name.charAt(0).toUpperCase()}</div>
-          <div>
-            <h1>${customer.name}</h1>
-            <p class="customer-rif">${customer.rif}</p>
+      <div class="card !p-0 overflow-hidden">
+        <div class="px-8 py-10 bg-gradient-to-br from-slate-900 to-slate-800 text-white flex flex-col md:flex-row items-center gap-8">
+          <div class="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent text-white flex items-center justify-center text-4xl font-bold shadow-xl shrink-0 border-4 border-white/20">
+            ${customer.name.charAt(0).toUpperCase()}
+          </div>
+          <div class="text-center md:text-left">
+            <h1 class="text-4xl font-bold mb-2">${customer.name}</h1>
+            <p class="text-slate-400 font-medium tracking-wider uppercase text-sm">${customer.rif}</p>
           </div>
         </div>
 
-        <div class="customer-info-grid">
-          <div class="info-item">
-            <span class="info-label">📧 Email</span>
-            <span class="info-value">${customer.email}</span>
+        <div class="p-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            <div class="flex flex-col gap-1">
+              <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400">📧 Email</span>
+              <span class="text-slate-700 font-medium truncate" title="${customer.email}">${customer.email}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400">📱 Teléfono</span>
+              <span class="text-slate-700 font-medium">${customer.phone}</span>
+            </div>
+            <div class="flex flex-col gap-1 col-span-1 md:col-span-1 lg:col-span-1">
+              <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400">📍 Dirección</span>
+              <span class="text-slate-700 font-medium line-clamp-1" title="${customer.address}">${customer.address}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-[10px] uppercase tracking-widest font-bold text-slate-400">📅 Cliente Desde</span>
+              <span class="text-slate-700 font-medium">${new Date(customer.createdAt).toLocaleDateString('es-VE')}</span>
+            </div>
           </div>
-          <div class="info-item">
-            <span class="info-label">📱 Teléfono</span>
-            <span class="info-value">${customer.phone}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">📍 Dirección</span>
-            <span class="info-value">${customer.address}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">📅 Cliente Desde</span>
-            <span class="info-value">${new Date(customer.createdAt).toLocaleDateString('es-VE')}</span>
-          </div>
-        </div>
 
-        <div class="stats-row">
-          <div class="stat-box">
-            <strong>${totalInvoices}</strong>
-            <span>Facturas</span>
-          </div>
-          <div class="stat-box">
-            <strong>$${totalAmount.toFixed(2)}</strong>
-            <span>Total Facturado</span>
-          </div>
-          <div class="stat-box">
-            <strong>$${paidAmount.toFixed(2)}</strong>
-            <span>Pagado</span>
-          </div>
-          <div class="stat-box">
-            <strong>$${pendingAmount.toFixed(2)}</strong>
-            <span>Pendiente</span>
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 text-center">
+              <strong class="block text-3xl font-bold text-indigo-700 mb-1">${totalInvoices}</strong>
+              <span class="text-[10px] uppercase tracking-widest font-bold text-slate-500">Facturas</span>
+            </div>
+            <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center">
+              <strong class="block text-3xl font-bold text-emerald-700 mb-1">$${totalAmount.toFixed(2)}</strong>
+              <span class="text-[10px] uppercase tracking-widest font-bold text-slate-500">Total Facturado</span>
+            </div>
+            <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 text-center">
+              <strong class="block text-3xl font-bold text-blue-700 mb-1">$${paidAmount.toFixed(2)}</strong>
+              <span class="text-[10px] uppercase tracking-widest font-bold text-slate-500">Pagado</span>
+            </div>
+            <div class="bg-amber-50/50 p-6 rounded-2xl border border-amber-100 text-center">
+              <strong class="block text-3xl font-bold text-amber-700 mb-1">$${pendingAmount.toFixed(2)}</strong>
+              <span class="text-[10px] uppercase tracking-widest font-bold text-slate-500">Pendiente</span>
+            </div>
           </div>
         </div>
       </div>
@@ -137,27 +144,27 @@ const { id } = Astro.params;
 
     if (invoices.length === 0) {
       if (invoicesContainer) invoicesContainer.innerHTML = '';
-      if (noInvoices) noInvoices.style.display = 'block';
+      if (noInvoices) noInvoices.classList.remove('hidden');
       return;
     }
 
-    if (noInvoices) noInvoices.style.display = 'none';
+    if (noInvoices) noInvoices.classList.add('hidden');
     if (invoicesContainer) {
       invoicesContainer.innerHTML = `
-      <div class="table-container">
-        <table class="table">
-          <thead>
+      <div class="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-md">
+        <table class="w-full border-collapse">
+          <thead class="bg-gray-50 border-bottom-2 border-gray-200">
             <tr>
-              <th>Número</th>
-              <th>Fecha</th>
-              <th>Vencimiento</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Estado</th>
-              <th>Acciones</th>
+              <th class="p-4 text-left font-semibold text-xs text-slate-500 uppercase tracking-widest">Número</th>
+              <th class="p-4 text-left font-semibold text-xs text-slate-500 uppercase tracking-widest">Fecha</th>
+              <th class="p-4 text-left font-semibold text-xs text-slate-500 uppercase tracking-widest">Vencimiento</th>
+              <th class="p-4 text-left font-semibold text-xs text-slate-500 uppercase tracking-widest">Items</th>
+              <th class="p-4 text-left font-semibold text-xs text-slate-500 uppercase tracking-widest">Total</th>
+              <th class="p-4 text-left font-semibold text-xs text-slate-500 uppercase tracking-widest">Estado</th>
+              <th class="p-4 text-left font-semibold text-xs text-slate-500 uppercase tracking-widest">Acciones</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-gray-100">
             ${invoices.map(invoice => {
               const statusClass = invoice.status === 'paid' ? 'badge-success' : 
                                  invoice.status === 'sent' ? 'badge-warning' : 'badge-info';
@@ -165,15 +172,15 @@ const { id } = Astro.params;
                                 invoice.status === 'sent' ? 'Enviada' : 'Borrador';
 
               return `
-                <tr>
-                  <td><strong>${invoice.invoiceNumber}</strong></td>
-                  <td>${new Date(invoice.date).toLocaleDateString('es-VE')}</td>
-                  <td>${new Date(invoice.dueDate).toLocaleDateString('es-VE')}</td>
-                  <td>${invoice.items.length} items</td>
-                  <td><strong>$${invoice.total.toFixed(2)}</strong></td>
-                  <td><span class="badge ${statusClass}">${statusText}</span></td>
-                  <td>
-                    <button class="btn btn-sm btn-outline view-invoice" data-id="${invoice.id}">Ver</button>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="p-4 text-sm font-bold text-slate-900">${invoice.invoiceNumber}</td>
+                  <td class="p-4 text-sm text-slate-600">${new Date(invoice.date).toLocaleDateString('es-VE')}</td>
+                  <td class="p-4 text-sm text-slate-600">${new Date(invoice.dueDate).toLocaleDateString('es-VE')}</td>
+                  <td class="p-4 text-sm text-slate-500">${invoice.items.length} items</td>
+                  <td class="p-4 text-sm font-bold text-slate-900">$${invoice.total.toFixed(2)}</td>
+                  <td class="p-4 text-sm"><span class="badge ${statusClass}">${statusText}</span></td>
+                  <td class="p-4">
+                    <button class="btn btn-sm btn-outline py-1.5 px-3 text-xs view-invoice" data-id="${invoice.id}">Ver Detalle</button>
                   </td>
                 </tr>
               `;
@@ -187,7 +194,7 @@ const { id } = Astro.params;
     // Attach event listeners
     document.querySelectorAll('.view-invoice').forEach(btn => {
       btn.addEventListener('click', () => {
-        const invoiceId = btn.getAttribute('data-id');
+        const invoiceId = (btn as HTMLElement).dataset.id;
         if (invoiceId) {
           window.location.href = `/facturas/${invoiceId}`;
         }
@@ -201,137 +208,5 @@ const { id } = Astro.params;
 </script>
 
 <style>
-  main {
-    padding: var(--space-2xl) var(--space-lg);
-  }
-
-  .breadcrumb {
-    margin-bottom: var(--space-xl);
-  }
-
-  .breadcrumb a {
-    color: var(--primary);
-    text-decoration: none;
-    font-weight: 500;
-  }
-
-  .breadcrumb a:hover {
-    text-decoration: underline;
-  }
-
-  .customer-detail-card {
-    margin-bottom: var(--space-2xl);
-  }
-
-  .customer-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-lg);
-    margin-bottom: var(--space-2xl);
-    padding-bottom: var(--space-xl);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .customer-avatar-large {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    font-weight: 600;
-  }
-
-  .customer-rif {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-  }
-
-  .customer-info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-lg);
-    margin-bottom: var(--space-2xl);
-  }
-
-  .info-item {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-  }
-
-  .info-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    font-weight: 600;
-  }
-
-  .info-value {
-    color: var(--text-primary);
-    font-weight: 500;
-  }
-
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: var(--space-md);
-  }
-
-  .stat-box {
-    background: var(--bg-secondary);
-    padding: var(--space-lg);
-    border-radius: var(--radius-md);
-    text-align: center;
-  }
-
-  .stat-box strong {
-    display: block;
-    font-size: 1.5rem;
-    color: var(--primary);
-    margin-bottom: var(--space-xs);
-  }
-
-  .stat-box span {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-  }
-
-  .invoices-section {
-    margin-top: var(--space-2xl);
-  }
-
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-xl);
-  }
-
-  .table-container {
-    overflow-x: auto;
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
-  }
-
-  .btn-sm {
-    padding: var(--space-xs) var(--space-sm);
-    font-size: 0.75rem;
-  }
-
-  .error-message {
-    text-align: center;
-    padding: var(--space-2xl);
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: var(--space-2xl);
-    color: var(--text-muted);
-  }
+  /* Scoped styles removed in favor of Tailwind utility classes and component abstractions */
 </style>
