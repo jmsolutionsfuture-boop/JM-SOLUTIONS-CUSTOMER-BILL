@@ -32,14 +32,14 @@ export const Navbar: React.FC<{ currentPath?: string }> = ({ currentPath = '/' }
   return (
     <nav 
       className={cn(
-        "sticky top-0 z-[100] w-full transition-all duration-300 border-b",
+        "sticky top-0 z-40 w-full transition-all duration-300 border-b",
         isScrolled 
-          ? "bg-background/80 backdrop-blur-md border-border py-2" 
-          : "bg-background border-transparent py-4"
+          ? "bg-background/80 backdrop-blur-md border-border py-1 md:py-2" 
+          : "bg-background border-transparent py-2 md:py-4"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-14 md:h-16">
           {/* Logo */}
           <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.location.href = '/'}>
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg group-hover:scale-110 transition-transform">

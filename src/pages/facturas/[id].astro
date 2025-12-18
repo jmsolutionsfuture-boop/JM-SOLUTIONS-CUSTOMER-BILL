@@ -17,22 +17,69 @@ const { id } = Astro.params;
     </div>
 
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 print:hidden">
-      <h1 class="text-4xl font-bold font-primary text-slate-900">Detalle de Factura</h1>
+      <div>
+        <h1 class="text-4xl font-bold font-primary text-slate-900 tracking-tight">Detalle de Factura</h1>
+        <p class="text-slate-500 mt-1">Visualiza y descarga el documento oficial.</p>
+      </div>
       <div class="flex gap-4">
-        <button id="print-btn" class="btn btn-outline shadow-sm" onclick="window.print()">
-          <span class="mr-2">🖨️</span> Imprimir
+        <button id="print-btn" class="btn btn-outline flex items-center gap-2" onclick="window.print()">
+          <span class="text-lg">🖨️</span> Imprimir
         </button>
-        <button id="download-pdf-btn" class="btn btn-primary shadow-lg" onclick="alert('Sugerencia: Para descargar como PDF, usa la opción \'Guardar como PDF\' en el diálogo de impresión.'); window.print();">
-          <span class="mr-2">⬇️</span> Descargar PDF
+        <button id="download-pdf-btn" class="btn btn-primary flex items-center gap-2 shadow-lg">
+          <span class="text-lg">⬇️</span> Descargar PDF
         </button>
       </div>
     </div>
 
-    <div id="invoice-view-wrapper" class="bg-slate-600 p-4 md:p-12 rounded-2xl shadow-inner min-h-[900px] flex justify-center items-start overflow-auto print:bg-white print:p-0 print:shadow-none print:rounded-none print:block">
+
+    <div id="invoice-view-wrapper" class="bg-slate-200/50 p-4 md:p-12 rounded-2xl shadow-inner min-h-[900px] flex justify-center items-start overflow-auto print:bg-white print:p-0 print:shadow-none print:rounded-none print:block">
       <InvoiceView client:only="react" id={id as string} />
     </div>
   </main>
 </Layout>
+
+<script>
+  import html2pdf from 'html2pdf.js';
+
+  const downloadBtn = document.getElementById('download-pdf-btn');
+  
+  downloadBtn?.addEventListener('click', async () => {
+    const element = document.getElementById('invoice-content');
+    if (!element) return;
+
+    const invoiceNum = element.getAttribute('data-invoice-number') || 'RECIBO';
+    const customerName = element.getAttribute('data-customer-name')?.replace(/[^a-z0-9]/gi, '_') || 'CLIENTE';
+
+    const opt = {
+      margin: [0, 0, 0, 0],
+      filename: `Recibo-${invoiceNum}-${customerName}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true,
+        letterRendering: true,
+        scrollX: 0,
+        scrollY: 0
+      },
+      jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+    };
+
+    // Show a loading state or similar if needed
+    downloadBtn.setAttribute('disabled', 'true');
+    const originalText = downloadBtn.innerHTML;
+    downloadBtn.innerHTML = 'Generando...';
+
+    try {
+      await (html2pdf() as any).set(opt).from(element).save();
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      alert('Error al generar el PDF. Por favor intenta usando el botón de Imprimir.');
+    } finally {
+      downloadBtn.removeAttribute('disabled');
+      downloadBtn.innerHTML = originalText;
+    }
+  });
+</script>
 
 <style>
   /* Print logic now handled via Tailwind 'print:' modifiers and Layout.astro */

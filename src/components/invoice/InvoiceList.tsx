@@ -34,43 +34,22 @@ export const InvoiceList: React.FC = () => {
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(inv => 
-        inv.invoiceNumber.toLowerCase().includes(term) ||
-        inv.customerName.toLowerCase().includes(term)
-      );
+      result = result.filter(inv => {
+        const invoiceNumber = (inv.invoiceNumber || '').toLowerCase();
+        const customerName = (inv.customerName || '').toLowerCase();
+        return invoiceNumber.includes(term) || customerName.includes(term);
+      });
     }
 
-    if (statusFilter !== 'all') {
-      result = result.filter(inv => inv.status === statusFilter);
+    if (statusFilter && statusFilter !== 'all') {
+      result = result.filter(inv => {
+        const status = (inv.status || '').toLowerCase();
+        return status === statusFilter.toLowerCase();
+      });
     }
 
     return result;
   }, [invoices, searchTerm, statusFilter]);
-
-  const handleChangeStatus = (id: string, currentStatus: string) => {
-    const statusOptions = {
-      'draft': 'Borrador',
-      'sent': 'Enviada',
-      'paid': 'Pagada'
-    };
-
-    const newStatus = prompt(
-      `Estado actual: ${statusOptions[currentStatus as keyof typeof statusOptions]}\n\nNuevo estado:\n1 = Borrador\n2 = Enviada\n3 = Pagada`,
-      currentStatus === 'draft' ? '1' : currentStatus === 'sent' ? '2' : '3'
-    );
-
-    if (newStatus) {
-      const statusMap: Record<string, 'draft' | 'sent' | 'paid'> = {
-        '1': 'draft',
-        '2': 'sent',
-        '3': 'paid'
-      };
-
-      if (statusMap[newStatus]) {
-        updateInvoice(id, { status: statusMap[newStatus] });
-      }
-    }
-  };
 
   const handleDelete = (id: string, number: string) => {
     if (confirm(`¿Eliminar factura ${number}?`)) {
@@ -78,14 +57,11 @@ export const InvoiceList: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'paid':
-        return <Badge className="bg-success hover:bg-success/90">Pagada</Badge>;
-      case 'sent':
-        return <Badge variant="secondary" className="bg-amber-100 text-amber-700">Enviada</Badge>;
-      default:
-        return <Badge variant="outline">Borrador</Badge>;
+      case 'paid': return 'bg-success text-white border-transparent';
+      case 'sent': return 'bg-amber-100 text-amber-700 border-amber-200';
+      default: return 'bg-slate-100 text-slate-600 border-slate-200';
     }
   }
 
@@ -165,12 +141,23 @@ export const InvoiceList: React.FC = () => {
                   <TableCell className="text-muted-foreground">{new Date(invoice.date).toLocaleDateString('es-VE')}</TableCell>
                   <TableCell className="text-muted-foreground">{new Date(invoice.dueDate).toLocaleDateString('es-VE')}</TableCell>
                   <TableCell className="font-bold">${invoice.total.toFixed(2)}</TableCell>
-                  <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                  <TableCell>
+                    <Select 
+                      value={invoice.status} 
+                      onValueChange={(val) => updateInvoice(invoice.id, { status: val as any })}
+                    >
+                      <SelectTrigger className={`h-8 w-[110px] text-xs font-semibold px-2 ${getStatusColor(invoice.status)}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Borrador</SelectItem>
+                        <SelectItem value="sent">Enviada</SelectItem>
+                        <SelectItem value="paid">Pagada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" title="Cambiar Estado" onClick={() => handleChangeStatus(invoice.id, invoice.status)}>
-                        <FileEdit className="w-4 h-4" />
-                      </Button>
                       <Button variant="ghost" size="icon" asChild title="Ver Factura">
                         <a href={`/facturas/${invoice.id}`}>
                           <Eye className="w-4 h-4" />

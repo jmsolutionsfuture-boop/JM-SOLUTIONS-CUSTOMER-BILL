@@ -5,7 +5,17 @@ import { storage, type Customer, type Invoice, type BusinessSettings } from '../
 export function useStorage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [settings, setSettings] = useState<BusinessSettings>(storage.getBusinessSettings());
+  
+  // Use a predictable default for settings on SSR
+  const [settings, setSettings] = useState<BusinessSettings>({
+    name: '',
+    rif: '',
+    address: '',
+    phone: '',
+    email: '',
+    taxPercentage: 16,
+    currency: 'USD'
+  });
 
   const refreshData = useCallback(() => {
     setCustomers(storage.getCustomers());
@@ -14,6 +24,7 @@ export function useStorage() {
   }, []);
 
   useEffect(() => {
+    // Load actual data only on the client
     refreshData();
 
     // Listen for storage changes in other tabs/windows

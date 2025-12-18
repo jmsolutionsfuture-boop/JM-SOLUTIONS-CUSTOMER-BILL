@@ -359,7 +359,7 @@ export const InvoiceForm: React.FC = () => {
           Vista Previa
           <Badge variant="secondary">Renderizado Real</Badge>
         </h3>
-        <div className="bg-slate-200 p-8 rounded-xl shadow-inner overflow-auto max-h-[80vh] flex justify-center">
+        <div className="bg-slate-200/50 p-8 rounded-xl shadow-inner overflow-auto max-h-[80vh] flex justify-center">
           <div className="scale-[0.8] origin-top">
             <InvoiceTemplate 
               invoice={{ ...invoiceData, items, subtotal, tax, total } as any} 

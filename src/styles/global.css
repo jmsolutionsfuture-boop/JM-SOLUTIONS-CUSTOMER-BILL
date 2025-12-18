@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -122,5 +122,74 @@
   .badge-success { @apply bg-success/10 text-success border border-success/20; }
   .badge-warning { @apply bg-warning/10 text-warning border border-warning/20; }
   .badge-error { @apply bg-error/10 text-error border border-error/20; }
+
   .badge-info { @apply bg-info/10 text-info border border-info/20; }
+
+  /* Paper Preview Look */
+  .invoice-paper-preview {
+    background-color: white;
+    width: 21.59cm;
+    min-height: 27.94cm;
+    padding: 1.5cm;
+    margin: 0 auto;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    transform-origin: top center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 22cm) {
+    .invoice-paper-preview {
+      width: 100%;
+      min-height: auto;
+      padding: 1cm;
+      box-shadow: none;
+    }
+  }
+}
+
+@layer utilities {
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
+  @media print {
+    html, body {
+      background: white !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+    
+    .print\:hidden {
+      display: none !important;
+    }
+
+    /* Standardize print layout */
+    main {
+       padding: 0 !important;
+       margin: 0 !important;
+       max-width: none !important;
+       width: 100% !important;
+    }
+
+    #invoice-view-wrapper {
+      background: white !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      min-height: auto !important;
+      display: block !important;
+      overflow: visible !important;
+    }
+
+    /* Fix to ensure no other elements are visible */
+    nav, footer, .navbar-container {
+      display: none !important;
+    }
+  }
 }

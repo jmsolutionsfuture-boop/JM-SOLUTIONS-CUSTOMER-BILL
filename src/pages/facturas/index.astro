@@ -8,10 +8,7 @@ import InvoiceList from '../../components/invoice/InvoiceList';
   <Navbar currentPath="/facturas" />
   
   <main class="max-w-[1280px] mx-auto px-6 py-12">
-    <InvoiceList client:load />
+    <InvoiceList client:only="react" />
   </main>
 </Layout>
 
-<style>
-  /* Styles moved to components */
-</style>

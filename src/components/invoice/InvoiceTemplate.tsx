@@ -26,7 +26,12 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, busin
   };
 
   return (
-    <div className="max-w-[800px] mx-auto p-10 bg-white font-sans text-black leading-snug print:p-0 print:max-w-none">
+    <div 
+      id="invoice-content" 
+      data-invoice-number={invoice.invoiceNumber || 'RECIBO'}
+      data-customer-name={customer?.name || 'CLIENTE'}
+      className="invoice-paper-preview print:shadow-none"
+    >
       {/* Header */}
       <div className="flex justify-between mb-10">
         <div className="sender-info">
