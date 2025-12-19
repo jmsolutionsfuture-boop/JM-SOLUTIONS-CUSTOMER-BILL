@@ -1,0 +1,22 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/layout/Navbar.astro';
+import InvoiceForm from '../../components/invoice/InvoiceForm';
+---
+
+<Layout title="Nueva Factura - Facturador Digital">
+  <Navbar currentPath="/facturas" />
+  
+  <main class="max-w-[1440px] mx-auto px-6 py-12">
+    <div class="mb-12">
+      <h1 class="text-4xl font-bold mb-2">Generar Factura</h1>
+      <p class="text-slate-500">Crea una nueva factura profesional en segundos</p>
+    </div>
+
+    <InvoiceForm client:only="react" />
+  </main>
+</Layout>
+
+<style>
+  /* Styles moved to components */
+</style>

@@ -1,0 +1,14 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/layout/Navbar.astro';
+import InvoiceList from '../../components/invoice/InvoiceList';
+---
+
+<Layout title="Facturas - Facturador Digital">
+  <Navbar currentPath="/facturas" />
+  
+  <main class="max-w-[1280px] mx-auto px-6 py-12">
+    <InvoiceList client:only="react" />
+  </main>
+</Layout>
+

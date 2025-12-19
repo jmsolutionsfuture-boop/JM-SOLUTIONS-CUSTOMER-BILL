@@ -1,0 +1,86 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/layout/Navbar.astro';
+import InvoiceView from '../../components/invoice/InvoiceView';
+const { id } = Astro.params;
+---
+
+<Layout title="Detalle Factura - Facturador Digital">
+  <Navbar currentPath="/facturas" />
+  
+  
+  <main class="max-w-[1280px] mx-auto px-6 py-12 print:p-0" data-invoice-id={id}>
+    <div class="mb-8 print:hidden">
+      <a href="/facturas" class="text-primary font-medium hover:underline flex items-center gap-2">
+        <span>←</span> Volver a Facturas
+      </a>
+    </div>
+
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 print:hidden">
+      <div>
+        <h1 class="text-4xl font-bold font-primary text-slate-900 tracking-tight">Detalle de Factura</h1>
+        <p class="text-slate-500 mt-1">Visualiza y descarga el documento oficial.</p>
+      </div>
+      <div class="flex gap-4">
+        <button id="print-btn" class="btn btn-outline flex items-center gap-2" onclick="window.print()">
+          <span class="text-lg">🖨️</span> Imprimir
+        </button>
+        <button id="download-pdf-btn" class="btn btn-primary flex items-center gap-2 shadow-lg">
+          <span class="text-lg">⬇️</span> Descargar PDF
+        </button>
+      </div>
+    </div>
+
+
+    <div id="invoice-view-wrapper" class="bg-slate-200/50 p-4 md:p-12 rounded-2xl shadow-inner min-h-[900px] flex justify-center items-start overflow-auto print:bg-white print:p-0 print:shadow-none print:rounded-none print:block">
+      <InvoiceView client:only="react" id={id as string} />
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import html2pdf from 'html2pdf.js';
+
+  const downloadBtn = document.getElementById('download-pdf-btn');
+  
+  downloadBtn?.addEventListener('click', async () => {
+    const element = document.getElementById('invoice-content');
+    if (!element) return;
+
+    const invoiceNum = element.getAttribute('data-invoice-number') || 'RECIBO';
+    const customerName = element.getAttribute('data-customer-name')?.replace(/[^a-z0-9]/gi, '_') || 'CLIENTE';
+
+    const opt = {
+      margin: [0, 0, 0, 0],
+      filename: `Recibo-${invoiceNum}-${customerName}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true,
+        letterRendering: true,
+        scrollX: 0,
+        scrollY: 0
+      },
+      jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+    };
+
+    // Show a loading state or similar if needed
+    downloadBtn.setAttribute('disabled', 'true');
+    const originalText = downloadBtn.innerHTML;
+    downloadBtn.innerHTML = 'Generando...';
+
+    try {
+      await (html2pdf() as any).set(opt).from(element).save();
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      alert('Error al generar el PDF. Por favor intenta usando el botón de Imprimir.');
+    } finally {
+      downloadBtn.removeAttribute('disabled');
+      downloadBtn.innerHTML = originalText;
+    }
+  });
+</script>
+
+<style>
+  /* Print logic now handled via Tailwind 'print:' modifiers and Layout.astro */
+</style>
