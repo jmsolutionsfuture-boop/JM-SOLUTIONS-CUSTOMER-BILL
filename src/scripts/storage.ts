@@ -53,9 +53,14 @@ class StorageService {
 
   // Customers
   getCustomers(): Customer[] {
-    if (typeof window === 'undefined') return [];
-    const data = localStorage.getItem(this.CUSTOMERS_KEY);
-    return data ? JSON.parse(data) : [];
+    if (typeof window === 'undefined' || !window.localStorage) return [];
+    try {
+      const data = localStorage.getItem(this.CUSTOMERS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error('Error loading customers from storage', e);
+      return [];
+    }
   }
 
   getCustomer(id: string): Customer | null {
@@ -71,7 +76,9 @@ class StorageService {
       createdAt: new Date().toISOString()
     };
     customers.push(newCustomer);
-    localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
+    }
     return newCustomer;
   }
 
@@ -81,7 +88,9 @@ class StorageService {
     if (index === -1) return null;
     
     customers[index] = { ...customers[index], ...updates };
-    localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
+    }
     return customers[index];
   }
 
@@ -90,15 +99,22 @@ class StorageService {
     const filtered = customers.filter(c => c.id !== id);
     if (filtered.length === customers.length) return false;
     
-    localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(filtered));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(filtered));
+    }
     return true;
   }
 
   // Invoices
   getInvoices(): Invoice[] {
-    if (typeof window === 'undefined') return [];
-    const data = localStorage.getItem(this.INVOICES_KEY);
-    return data ? JSON.parse(data) : [];
+    if (typeof window === 'undefined' || !window.localStorage) return [];
+    try {
+      const data = localStorage.getItem(this.INVOICES_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error('Error loading invoices from storage', e);
+      return [];
+    }
   }
 
   getInvoice(id: string): Invoice | null {
@@ -128,7 +144,9 @@ class StorageService {
       id: crypto.randomUUID(),
     };
     invoices.push(newInvoice);
-    localStorage.setItem(this.INVOICES_KEY, JSON.stringify(invoices));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(this.INVOICES_KEY, JSON.stringify(invoices));
+    }
     return newInvoice;
   }
 
@@ -138,7 +156,9 @@ class StorageService {
     if (index === -1) return null;
     
     invoices[index] = { ...invoices[index], ...updates };
-    localStorage.setItem(this.INVOICES_KEY, JSON.stringify(invoices));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(this.INVOICES_KEY, JSON.stringify(invoices));
+    }
     return invoices[index];
   }
 
@@ -147,21 +167,29 @@ class StorageService {
     const filtered = invoices.filter(i => i.id !== id);
     if (filtered.length === invoices.length) return false;
     
-    localStorage.setItem(this.INVOICES_KEY, JSON.stringify(filtered));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(this.INVOICES_KEY, JSON.stringify(filtered));
+    }
     return true;
   }
 
   // Business Settings
   getBusinessSettings(): BusinessSettings {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || !window.localStorage) {
       return this.getDefaultSettings();
     }
-    const data = localStorage.getItem(this.BUSINESS_KEY);
-    return data ? JSON.parse(data) : this.getDefaultSettings();
+    try {
+      const data = localStorage.getItem(this.BUSINESS_KEY);
+      return data ? JSON.parse(data) : this.getDefaultSettings();
+    } catch (e) {
+      return this.getDefaultSettings();
+    }
   }
 
   saveBusinessSettings(settings: BusinessSettings): void {
-    localStorage.setItem(this.BUSINESS_KEY, JSON.stringify(settings));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(this.BUSINESS_KEY, JSON.stringify(settings));
+    }
   }
 
   private getDefaultSettings(): BusinessSettings {
@@ -178,7 +206,7 @@ class StorageService {
 
   // Utility
   clearAll(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !window.localStorage) return;
     localStorage.removeItem(this.CUSTOMERS_KEY);
     localStorage.removeItem(this.INVOICES_KEY);
     localStorage.removeItem(this.BUSINESS_KEY);
