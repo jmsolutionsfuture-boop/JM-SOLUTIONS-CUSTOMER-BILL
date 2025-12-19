@@ -134,7 +134,7 @@ export const InvoiceList: React.FC = () => {
                 <TableRow key={invoice.id}>
                   <TableCell className="font-bold">{invoice.invoiceNumber}</TableCell>
                   <TableCell>
-                    <a href={`/clientes/${invoice.customerId}`} className="text-primary hover:underline font-medium">
+                    <a href={`/clientes/ver?id=${invoice.customerId}`} className="text-primary hover:underline font-medium">
                       {invoice.customerName}
                     </a>
                   </TableCell>
@@ -159,7 +159,7 @@ export const InvoiceList: React.FC = () => {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" asChild title="Ver Factura">
-                        <a href={`/facturas/${invoice.id}`}>
+                        <a href={`/facturas/ver?id=${invoice.id}`}>
                           <Eye className="w-4 h-4" />
                         </a>
                       </Button>

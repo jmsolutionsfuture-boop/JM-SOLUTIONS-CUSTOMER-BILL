@@ -159,7 +159,7 @@ export const CustomerManagement: React.FC = () => {
 
                 <CardFooter className="pt-4 grid grid-cols-2 gap-2">
                   <Button asChild variant="ghost" size="sm" className="col-span-2 group/btn">
-                    <a href={`/clientes/${customer.id}`} className="flex items-center justify-center gap-2">
+                    <a href={`/clientes/ver?id=${customer.id}`} className="flex items-center justify-center gap-2">
                        Ver Detalle <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </a>
                   </Button>

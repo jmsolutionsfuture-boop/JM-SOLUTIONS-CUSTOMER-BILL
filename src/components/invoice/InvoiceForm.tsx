@@ -132,8 +132,8 @@ export const InvoiceForm: React.FC = () => {
     };
 
     try {
-      saveInvoice(finalInvoice);
-      window.location.href = '/facturas';
+      const savedInvoice = saveInvoice(finalInvoice);
+      window.location.href = `/facturas/ver?id=${savedInvoice.id}`;
     } catch (err) {
       console.error(err);
       alert('Ocurrió un error al guardar la factura');

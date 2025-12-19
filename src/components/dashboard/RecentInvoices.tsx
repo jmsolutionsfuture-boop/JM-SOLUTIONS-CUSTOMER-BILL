@@ -53,7 +53,7 @@ export const RecentInvoices: React.FC = () => {
                   <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
-                      <a href={`/facturas/${invoice.id}`}>
+                      <a href={`/facturas/ver?id=${invoice.id}`}>
                         <Eye className="w-4 h-4" />
                       </a>
                     </Button>
