@@ -26,11 +26,51 @@ import InvoiceTemplate from './InvoiceTemplate';
 import type { InvoiceItem, Customer, Invoice } from '@/scripts/storage';
 import { Plus, Trash2, Save, XCircle } from 'lucide-react';
 
+// Error Boundary to catch and display errors
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 bg-red-50 border border-red-200 rounded-lg">
+          <h2 className="text-red-800 font-bold text-lg mb-2">Error en el Formulario</h2>
+          <p className="text-red-700 text-sm mb-4">
+            Ocurrió un error al cargar el formulario. Por favor, verifica tu configuración.
+          </p>
+          <pre className="bg-red-100 p-4 rounded text-xs overflow-auto">
+            {this.state.error?.message}
+          </pre>
+          <button
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            onClick={() => window.location.href = '/configuracion'}
+          >
+            Ir a Configuración
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export const InvoiceForm: React.FC = () => {
-  const { 
-    settings, 
-    customers, 
-    saveInvoice, 
+  const {
+    settings,
+    customers,
+    products,
+    loading,
+    saveInvoice,
     getNextInvoiceNumber,
     getCustomer
   } = useStorage();
@@ -50,18 +90,49 @@ export const InvoiceForm: React.FC = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
   useEffect(() => {
+    // Only run once on mount
+    const invoiceNum = getNextInvoiceNumber();
     setInvoiceData(prev => ({
       ...prev,
-      invoiceNumber: getNextInvoiceNumber()
+      invoiceNumber: invoiceNum
     }));
-    
+
     // Check for pre-selected customer from URL
     const params = new URLSearchParams(window.location.search);
     const customerId = params.get('customerId');
     if (customerId) {
       handleCustomerChange(customerId);
     }
-  }, [getNextInvoiceNumber]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Draft Persistence
+  useEffect(() => {
+    // Load draft checks
+    const draft = localStorage.getItem('invoice_draft');
+    const params = new URLSearchParams(window.location.search);
+    const hasUrlCustomer = params.get('customerId');
+
+    if (draft && !hasUrlCustomer) {
+      try {
+        const { invoiceData: dData, items: dItems, selectedCustomerId: dId } = JSON.parse(draft);
+        if (dData && dItems) {
+          setInvoiceData(dData);
+          setItems(dItems);
+          setSelectedCustomerId(dId || '');
+        }
+      } catch (e) {
+        console.error('Error loading draft', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (invoiceData.customerId || items.length > 0 || invoiceData.notes) {
+      const draft = { invoiceData, items, selectedCustomerId };
+      localStorage.setItem('invoice_draft', JSON.stringify(draft));
+    }
+  }, [invoiceData, items, selectedCustomerId]);
 
   const handleCustomerChange = (id: string) => {
     setSelectedCustomerId(id);
@@ -101,12 +172,26 @@ export const InvoiceForm: React.FC = () => {
     }));
   };
 
+  const handleProductSelect = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      const newItem: InvoiceItem = {
+        id: `item-${Date.now()}`,
+        description: product.name,
+        quantity: 1,
+        unitPrice: product.price,
+        total: product.price
+      };
+      setItems(prev => [...prev, newItem]);
+    }
+  };
+
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.total, 0), [items]);
   const tax = useMemo(() => subtotal * (settings.taxPercentage / 100), [subtotal, settings.taxPercentage]);
   const total = useMemo(() => subtotal + tax, [subtotal, tax]);
 
-  const selectedCustomer = useMemo(() => 
-    customers.find(c => c.id === selectedCustomerId), 
+  const selectedCustomer = useMemo(() =>
+    customers.find(c => c.id === selectedCustomerId),
     [customers, selectedCustomerId]
   );
 
@@ -133,6 +218,7 @@ export const InvoiceForm: React.FC = () => {
 
     try {
       const savedInvoice = saveInvoice(finalInvoice);
+      localStorage.removeItem('invoice_draft');
       window.location.href = `/facturas/ver?id=${savedInvoice.id}`;
     } catch (err) {
       console.error(err);
@@ -153,223 +239,264 @@ export const InvoiceForm: React.FC = () => {
     }
   }, []);
 
+  if (loading) {
+    return (
+      <div className="flex justify-center pt-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!settings.name || !settings.rif) {
+    return (
+      <div className="flex justify-center pt-20">
+        <Card className="max-w-md w-full border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="text-orange-800">⚠️ Perfil Incompleto</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-orange-700">
+              Parece que no has configurado los datos de tu empresa.
+              Es necesario tener un perfil básico (Nombre, RIF) para generar facturas válidas.
+            </p>
+            <Button onClick={() => window.location.href = '/configuracion'} className="w-full" variant="default">
+              Configurar Ahora
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr,500px] gap-8 pb-12">
-      {/* Form Side */}
-      <div className="flex flex-col gap-6">
-        <div className="flex justify-between items-center gap-6">
-           <div>
-             <h2 className="text-2xl font-bold">Nueva Factura</h2>
-             <p className="text-muted-foreground text-sm">Completa los campos para generar el documento.</p>
-           </div>
-           <div className="flex gap-3">
-            <Button variant="outline" onClick={handleCancel}>
-              <XCircle className="w-4 h-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button onClick={handleSubmit}>
-              <Save className="w-4 h-4 mr-2" />
-              Guardar Factura
-            </Button>
-           </div>
-        </div>
+    <ErrorBoundary>
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr,500px] gap-8 pb-12">
+        {/* Form Side */}
+        <div className="flex flex-col gap-6">
+          <div className="flex justify-between items-center gap-6">
+            <div>
+              <h2 className="text-2xl font-bold">Nueva Factura</h2>
+              <p className="text-muted-foreground text-sm">Completa los campos para generar el documento.</p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={handleCancel}>
+                <XCircle className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmit}>
+                <Save className="w-4 h-4 mr-2" />
+                Guardar Factura
+              </Button>
+            </div>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Información del Cliente</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <Label>Seleccionar Cliente *</Label>
-                <Select value={selectedCustomerId} onValueChange={handleCustomerChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Busca un cliente..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name} ({c.rif})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {selectedCustomer && (
-                <div className="p-4 bg-muted/50 rounded-lg border text-sm">
-                  <p className="font-bold flex items-center justify-between">
-                    {selectedCustomer.name}
-                    <Badge variant="outline">{selectedCustomer.rif}</Badge>
-                  </p>
-                  <p className="text-muted-foreground mt-1">{selectedCustomer.email}</p>
-                  <p className="text-muted-foreground">{selectedCustomer.phone}</p>
-                  <p className="text-muted-foreground truncate italic mt-2">{selectedCustomer.address}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Detalles Legales</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Información del Cliente</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="grid gap-2">
-                  <Label>Nº Factura</Label>
-                  <Input value={invoiceData.invoiceNumber} readOnly className="bg-muted font-bold" />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Estado</Label>
-                  <Select 
-                    value={invoiceData.status} 
-                    onValueChange={(v) => setInvoiceData(prev => ({ ...prev, status: v as any }))}
-                  >
+                  <Label>Seleccionar Cliente *</Label>
+                  <Select value={selectedCustomerId} onValueChange={handleCustomerChange}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Busca un cliente..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="draft">Borrador</SelectItem>
-                      <SelectItem value="sent">Enviada</SelectItem>
-                      <SelectItem value="paid">Pagada</SelectItem>
+                      {customers.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name} ({c.rif})</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>Emisión</Label>
-                  <Input 
-                    type="date" 
-                    value={invoiceData.date}
-                    onChange={(e) => setInvoiceData(prev => ({ ...prev, date: e.target.value }))}
-                  />
+
+                {selectedCustomer && (
+                  <div className="p-4 bg-muted/50 rounded-lg border text-sm">
+                    <p className="font-bold flex items-center justify-between">
+                      {selectedCustomer.name}
+                      <Badge variant="outline">{selectedCustomer.rif}</Badge>
+                    </p>
+                    <p className="text-muted-foreground mt-1">{selectedCustomer.email}</p>
+                    <p className="text-muted-foreground">{selectedCustomer.phone}</p>
+                    <p className="text-muted-foreground truncate italic mt-2">{selectedCustomer.address}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Detalles Legales</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label>Nº Factura</Label>
+                    <Input value={invoiceData.invoiceNumber} readOnly className="bg-muted font-bold" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Estado</Label>
+                    <Select
+                      value={invoiceData.status}
+                      onValueChange={(v) => setInvoiceData(prev => ({ ...prev, status: v as any }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Borrador</SelectItem>
+                        <SelectItem value="sent">Enviada</SelectItem>
+                        <SelectItem value="paid">Pagada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label>Vencimiento</Label>
-                  <Input 
-                    type="date" 
-                    value={invoiceData.dueDate}
-                    onChange={(e) => setInvoiceData(prev => ({ ...prev, dueDate: e.target.value }))}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label>Emisión</Label>
+                    <Input
+                      type="date"
+                      value={invoiceData.date}
+                      onChange={(e) => setInvoiceData(prev => ({ ...prev, date: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Vencimiento</Label>
+                    <Input
+                      type="date"
+                      value={invoiceData.dueDate}
+                      onChange={(e) => setInvoiceData(prev => ({ ...prev, dueDate: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-lg font-bold">Items del Recibo</CardTitle>
+              <Button variant="outline" size="sm" onClick={addItem}>
+                <Plus className="w-4 h-4 mr-2" />
+                Agregar Item
+              </Button>
+              <Select onValueChange={handleProductSelect} value="">
+                <SelectTrigger className="w-[180px] h-9">
+                  <SelectValue placeholder="Importar Producto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name} - ${p.price}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead className="w-24 text-center">Cant.</TableHead>
+                    <TableHead className="w-32 text-right">Precio</TableHead>
+                    <TableHead className="w-32 text-right">Total</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <Input
+                          placeholder="Descripción..."
+                          className="h-8 border-transparent hover:border-input focus:border-input bg-transparent"
+                          value={item.description}
+                          onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          className="h-8 text-center"
+                          value={item.quantity}
+                          onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          className="h-8 text-right font-mono"
+                          value={item.unitPrice}
+                          onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right font-bold">
+                        ${item.total.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeItem(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              <div className="mt-6 flex flex-col items-end gap-2 px-4 py-4 bg-muted/20 rounded-lg">
+                <div className="flex justify-between w-64 text-sm text-muted-foreground">
+                  <span>Subtotal:</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between w-64 text-sm text-muted-foreground">
+                  <span>IVA ({settings.taxPercentage}%):</span>
+                  <span>${tax.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between w-64 text-xl font-bold pt-2 border-t mt-2">
+                  <span>Total:</span>
+                  <span className="text-primary">${total.toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Notas Adicionales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                className="min-h-[100px]"
+                placeholder="Escribe términos de pago, agradecimientos o notas importantes..."
+                value={invoiceData.notes}
+                onChange={(e) => setInvoiceData(prev => ({ ...prev, notes: e.target.value }))}
+              />
+            </CardContent>
+          </Card>
         </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-lg font-bold">Items del Recibo</CardTitle>
-            <Button variant="outline" size="sm" onClick={addItem}>
-              <Plus className="w-4 h-4 mr-2" />
-              Agregar Item
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Descripción</TableHead>
-                  <TableHead className="w-24 text-center">Cant.</TableHead>
-                  <TableHead className="w-32 text-right">Precio</TableHead>
-                  <TableHead className="w-32 text-right">Total</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <Input 
-                        placeholder="Descripción..." 
-                        className="h-8 border-transparent hover:border-input focus:border-input bg-transparent"
-                        value={item.description}
-                        onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input 
-                        type="number" 
-                        className="h-8 text-center"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input 
-                        type="number" 
-                        className="h-8 text-right font-mono"
-                        value={item.unitPrice}
-                        onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right font-bold">
-                      ${item.total.toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => removeItem(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            <div className="mt-6 flex flex-col items-end gap-2 px-4 py-4 bg-muted/20 rounded-lg">
-              <div className="flex justify-between w-64 text-sm text-muted-foreground">
-                <span>Subtotal:</span>
-                <span>${subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between w-64 text-sm text-muted-foreground">
-                <span>IVA ({settings.taxPercentage}%):</span>
-                <span>${tax.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between w-64 text-xl font-bold pt-2 border-t mt-2">
-                <span>Total:</span>
-                <span className="text-primary">${total.toFixed(2)}</span>
-              </div>
+        {/* Preview Side */}
+        <div className="h-fit sticky top-28">
+          <h3 className="text-lg font-bold mb-4 flex items-center justify-between">
+            Vista Previa
+            <Badge variant="secondary">Renderizado Real</Badge>
+          </h3>
+          <div className="bg-slate-200/50 p-8 rounded-xl shadow-inner overflow-auto max-h-[80vh] flex justify-center">
+            <div className="scale-[0.8] origin-top">
+              <InvoiceTemplate
+                invoice={{ ...invoiceData, items, subtotal, tax, total } as any}
+                businessSettings={settings}
+                customer={selectedCustomer}
+              />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-bold">Notas Adicionales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea 
-              className="min-h-[100px]"
-              placeholder="Escribe términos de pago, agradecimientos o notas importantes..."
-              value={invoiceData.notes}
-              onChange={(e) => setInvoiceData(prev => ({ ...prev, notes: e.target.value }))}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Preview Side */}
-      <div className="h-fit sticky top-28">
-        <h3 className="text-lg font-bold mb-4 flex items-center justify-between">
-          Vista Previa
-          <Badge variant="secondary">Renderizado Real</Badge>
-        </h3>
-        <div className="bg-slate-200/50 p-8 rounded-xl shadow-inner overflow-auto max-h-[80vh] flex justify-center">
-          <div className="scale-[0.8] origin-top">
-            <InvoiceTemplate 
-              invoice={{ ...invoiceData, items, subtotal, tax, total } as any} 
-              businessSettings={settings} 
-              customer={selectedCustomer} 
-            />
           </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 

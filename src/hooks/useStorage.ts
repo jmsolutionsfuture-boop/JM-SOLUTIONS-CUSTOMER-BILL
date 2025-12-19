@@ -1,11 +1,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { storage, type Customer, type Invoice, type BusinessSettings } from '../scripts/storage';
+import { storage, type Customer, type Invoice, type BusinessSettings, type Product } from '../scripts/storage';
 
 export function useStorage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+
+  const [products, setProducts] = useState<Product[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  
+  const [loading, setLoading] = useState(true);
+
   // Use a predictable default for settings on SSR
   const [settings, setSettings] = useState<BusinessSettings>({
     name: '',
@@ -14,13 +17,19 @@ export function useStorage() {
     phone: '',
     email: '',
     taxPercentage: 16,
-    currency: 'USD'
+
+    currency: 'USD',
+    secondaryCurrency: 'VES',
+    exchangeRate: 1
   });
 
   const refreshData = useCallback(() => {
     setCustomers(storage.getCustomers());
+
+    setProducts(storage.getProducts());
     setInvoices(storage.getInvoices());
     setSettings(storage.getBusinessSettings());
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -35,7 +44,7 @@ export function useStorage() {
     };
 
     window.addEventListener('storage', handleStorageChange);
-    
+
     // Custom event for internal changes (same window)
     const handleInternalChange = () => refreshData();
     window.addEventListener('storage-update', handleInternalChange);
@@ -53,6 +62,9 @@ export function useStorage() {
   return {
     customers,
     invoices,
+    loading,
+    products,
+
     settings,
     refreshData,
     saveCustomer: (customer: any) => {
@@ -67,6 +79,21 @@ export function useStorage() {
     },
     deleteCustomer: (id: string) => {
       const res = storage.deleteCustomer(id);
+      notifyChange();
+      return res;
+    },
+    saveProduct: (product: any) => {
+      const res = storage.saveProduct(product);
+      notifyChange();
+      return res;
+    },
+    updateProduct: (id: string, updates: any) => {
+      const res = storage.updateProduct(id, updates);
+      notifyChange();
+      return res;
+    },
+    deleteProduct: (id: string) => {
+      const res = storage.deleteProduct(id);
       notifyChange();
       return res;
     },
@@ -95,6 +122,7 @@ export function useStorage() {
     },
     getNextInvoiceNumber: () => storage.getNextInvoiceNumber(),
     getCustomer: (id: string) => storage.getCustomer(id),
+    getProduct: (id: string) => storage.getProduct(id),
     getInvoice: (id: string) => storage.getInvoice(id),
   };
 }

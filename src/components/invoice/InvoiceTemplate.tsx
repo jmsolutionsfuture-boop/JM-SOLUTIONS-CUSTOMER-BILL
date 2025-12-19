@@ -20,14 +20,22 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, busin
     return `${businessSettings.currency} ${amount.toFixed(2)}`;
   };
 
+  const hasSecondary = businessSettings.secondaryCurrency && businessSettings.exchangeRate && businessSettings.exchangeRate > 0;
+
+  const formatSecondary = (amount: number) => {
+    if (!hasSecondary || !businessSettings.exchangeRate) return '';
+    const converted = amount * businessSettings.exchangeRate;
+    return `${businessSettings.secondaryCurrency} ${converted.toFixed(2)}`;
+  };
+
   const formatDate = (dateStr: string | undefined) => {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString('es-VE');
   };
 
   return (
-    <div 
-      id="invoice-content" 
+    <div
+      id="invoice-content"
       data-invoice-number={invoice.invoiceNumber || 'RECIBO'}
       data-customer-name={customer?.name || 'CLIENTE'}
       className="invoice-paper-preview print:shadow-none"
@@ -120,10 +128,22 @@ export const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({ invoice, busin
         </div>
 
         <div className="w-[250px]">
-          <div className="flex justify-between p-2 mt-2 bg-gray-100 font-bold border border-gray-300">
-            <span>TOTAL</span>
-            <span>{currency(total)}</span>
+          <div className="flex justify-between p-2 mt-2 bg-gray-100 font-bold border border-gray-300 items-start">
+            <span className="mt-1">TOTAL</span>
+            <div className="text-right">
+              <div>{currency(total)}</div>
+              {hasSecondary && (
+                <div className="text-sm font-normal text-gray-600">
+                  {formatSecondary(total)}
+                </div>
+              )}
+            </div>
           </div>
+          {hasSecondary && (
+            <div className="text-right text-[10px] mt-1 text-gray-500">
+              Tasa: 1 {businessSettings.currency} = {businessSettings.exchangeRate} {businessSettings.secondaryCurrency}
+            </div>
+          )}
         </div>
       </div>
 

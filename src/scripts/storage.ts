@@ -9,6 +9,14 @@ export interface Customer {
   createdAt: string;
 }
 
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  sku?: string;
+}
+
 export interface InvoiceItem {
   id: string;
   description: string;
@@ -43,11 +51,14 @@ export interface BusinessSettings {
   signature?: string;
   taxPercentage: number;
   currency: string;
+  secondaryCurrency?: string;
+  exchangeRate?: number;
 }
 
 // Storage Service
 class StorageService {
   private CUSTOMERS_KEY = 'invoice_customers';
+  private PRODUCTS_KEY = 'invoice_products';
   private INVOICES_KEY = 'invoice_invoices';
   private BUSINESS_KEY = 'invoice_business';
 
@@ -86,7 +97,7 @@ class StorageService {
     const customers = this.getCustomers();
     const index = customers.findIndex(c => c.id === id);
     if (index === -1) return null;
-    
+
     customers[index] = { ...customers[index], ...updates };
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
@@ -98,9 +109,62 @@ class StorageService {
     const customers = this.getCustomers();
     const filtered = customers.filter(c => c.id !== id);
     if (filtered.length === customers.length) return false;
-    
+
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(filtered));
+    }
+    return true;
+  }
+
+  // Products
+  getProducts(): Product[] {
+    if (typeof window === 'undefined' || !window.localStorage) return [];
+    try {
+      const data = localStorage.getItem(this.PRODUCTS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error('Error loading products from storage', e);
+      return [];
+    }
+  }
+
+  getProduct(id: string): Product | null {
+    const products = this.getProducts();
+    return products.find(p => p.id === id) || null;
+  }
+
+  saveProduct(product: Omit<Product, 'id'>): Product {
+    const products = this.getProducts();
+    const newProduct: Product = {
+      ...product,
+      id: crypto.randomUUID()
+    };
+    products.push(newProduct);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(this.PRODUCTS_KEY, JSON.stringify(products));
+    }
+    return newProduct;
+  }
+
+  updateProduct(id: string, updates: Partial<Product>): Product | null {
+    const products = this.getProducts();
+    const index = products.findIndex(p => p.id === id);
+    if (index === -1) return null;
+
+    products[index] = { ...products[index], ...updates };
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(this.PRODUCTS_KEY, JSON.stringify(products));
+    }
+    return products[index];
+  }
+
+  deleteProduct(id: string): boolean {
+    const products = this.getProducts();
+    const filtered = products.filter(p => p.id !== id);
+    if (filtered.length === products.length) return false;
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(this.PRODUCTS_KEY, JSON.stringify(filtered));
     }
     return true;
   }
@@ -132,7 +196,7 @@ class StorageService {
     const numbers = invoices
       .map(i => parseInt(i.invoiceNumber.replace(/\D/g, '')))
       .filter(n => !isNaN(n));
-    
+
     const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
     return `FAC-${String(maxNumber + 1).padStart(5, '0')}`;
   }
@@ -154,7 +218,7 @@ class StorageService {
     const invoices = this.getInvoices();
     const index = invoices.findIndex(i => i.id === id);
     if (index === -1) return null;
-    
+
     invoices[index] = { ...invoices[index], ...updates };
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem(this.INVOICES_KEY, JSON.stringify(invoices));
@@ -166,7 +230,7 @@ class StorageService {
     const invoices = this.getInvoices();
     const filtered = invoices.filter(i => i.id !== id);
     if (filtered.length === invoices.length) return false;
-    
+
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem(this.INVOICES_KEY, JSON.stringify(filtered));
     }
@@ -200,7 +264,9 @@ class StorageService {
       phone: '+58 412-0000000',
       email: 'info@miempresa.com',
       taxPercentage: 16,
-      currency: 'USD'
+      currency: 'USD',
+      secondaryCurrency: 'VES',
+      exchangeRate: 1
     };
   }
 
@@ -208,6 +274,7 @@ class StorageService {
   clearAll(): void {
     if (typeof window === 'undefined' || !window.localStorage) return;
     localStorage.removeItem(this.CUSTOMERS_KEY);
+    localStorage.removeItem(this.PRODUCTS_KEY);
     localStorage.removeItem(this.INVOICES_KEY);
     localStorage.removeItem(this.BUSINESS_KEY);
   }

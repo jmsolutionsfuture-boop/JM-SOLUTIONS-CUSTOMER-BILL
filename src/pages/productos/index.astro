@@ -1,0 +1,23 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Navbar from "../../components/layout/Navbar.astro";
+import { ProductList } from "../../components/products/ProductList";
+---
+
+<Layout title="Productos y Servicios - Facturador Digital">
+    <Navbar currentPath="/productos" />
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">
+                Catálogo de Productos
+            </h1>
+            <p class="text-slate-500 mt-2">
+                Gestiona tus servicios recurrentes y productos para facturación
+                rápida.
+            </p>
+        </div>
+
+        <ProductList client:only="react" />
+    </main>
+</Layout>

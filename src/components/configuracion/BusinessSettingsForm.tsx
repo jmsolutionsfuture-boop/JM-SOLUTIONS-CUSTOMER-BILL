@@ -19,7 +19,7 @@ export const BusinessSettingsForm: React.FC = () => {
   const [formData, setFormData] = useState(settings);
   const [logoPreview, setLogoPreview] = useState<string | undefined>(settings.logo);
   const [signaturePreview, setSignaturePreview] = useState<string | undefined>(settings.signature);
-  
+
   const logoInputRef = useRef<HTMLInputElement>(null);
   const signatureInputRef = useRef<HTMLInputElement>(null);
 
@@ -106,55 +106,55 @@ export const BusinessSettingsForm: React.FC = () => {
           <form id="business-form" className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid gap-2">
               <Label htmlFor="business-name">Nombre de la Empresa *</Label>
-              <Input 
-                id="business-name" 
-                value={formData.name} 
-                onChange={handleChange} 
-                required 
+              <Input
+                id="business-name"
+                value={formData.name}
+                onChange={handleChange}
+                required
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="business-rif">RIF *</Label>
-              <Input 
-                id="business-rif" 
-                value={formData.rif} 
-                onChange={handleChange} 
-                required 
-                placeholder="J-12345678-9" 
+              <Input
+                id="business-rif"
+                value={formData.rif}
+                onChange={handleChange}
+                required
+                placeholder="J-12345678-9"
               />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="business-address">Dirección *</Label>
-              <Textarea 
-                id="business-address" 
-                value={formData.address} 
-                onChange={handleChange} 
-                required 
+              <Textarea
+                id="business-address"
+                value={formData.address}
+                onChange={handleChange}
+                required
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="business-phone">Teléfono *</Label>
-                <Input 
-                  id="business-phone" 
-                  type="tel" 
-                  value={formData.phone} 
-                  onChange={handleChange} 
-                  required 
-                  placeholder="+58 412-0000000" 
+                <Input
+                  id="business-phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                  placeholder="+58 412-0000000"
                 />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="business-email">Email *</Label>
-                <Input 
-                  id="business-email" 
-                  type="email" 
-                  value={formData.email} 
-                  onChange={handleChange} 
-                  required 
+                <Input
+                  id="business-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
                 />
               </div>
             </div>
@@ -162,14 +162,14 @@ export const BusinessSettingsForm: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="business-taxPercentage">IVA (%)</Label>
-                <Input 
-                  id="business-taxPercentage" 
-                  type="number" 
-                  value={formData.taxPercentage} 
-                  onChange={handleChange} 
-                  min="0" 
-                  max="100" 
-                  step="0.1" 
+                <Input
+                  id="business-taxPercentage"
+                  type="number"
+                  value={formData.taxPercentage}
+                  onChange={handleChange}
+                  min="0"
+                  max="100"
+                  step="0.1"
                 />
               </div>
               <div className="grid gap-2">
@@ -184,6 +184,41 @@ export const BusinessSettingsForm: React.FC = () => {
                     <SelectItem value="EUR">EUR (€)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid gap-2">
+                <Label>Moneda Secundaria (Referencial)</Label>
+                <Select value={formData.secondaryCurrency || 'VES'} onValueChange={(v) => setFormData(prev => ({ ...prev, secondaryCurrency: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar moneda" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="VES">VES (Bolívares)</SelectItem>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="business-exchangeRate">Tasa de Cambio</Label>
+                <div className="relative">
+                  <Input
+                    id="business-exchangeRate"
+                    type="number"
+                    step="0.01"
+                    className="pl-24"
+                    value={formData.exchangeRate || 0}
+                    onChange={handleChange}
+                  />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground text-sm">
+                    1 {formData.currency} =
+                  </div>
+                </div>
+                <p className="text-[0.8rem] text-muted-foreground">
+                  Se usará para calcular el monto en {formData.secondaryCurrency || 'VES'}.
+                </p>
               </div>
             </div>
           </form>
@@ -205,12 +240,12 @@ export const BusinessSettingsForm: React.FC = () => {
               )}
             </div>
             <div className="flex gap-4">
-              <input 
-                type="file" 
-                ref={logoInputRef} 
-                onChange={handleLogoChange} 
-                accept="image/*" 
-                className="hidden" 
+              <input
+                type="file"
+                ref={logoInputRef}
+                onChange={handleLogoChange}
+                accept="image/*"
+                className="hidden"
               />
               <Button variant="outline" onClick={() => logoInputRef.current?.click()}>
                 Seleccionar Logo
@@ -238,12 +273,12 @@ export const BusinessSettingsForm: React.FC = () => {
               )}
             </div>
             <div className="flex gap-4">
-              <input 
-                type="file" 
-                ref={signatureInputRef} 
-                onChange={handleSignatureChange} 
-                accept="image/*" 
-                className="hidden" 
+              <input
+                type="file"
+                ref={signatureInputRef}
+                onChange={handleSignatureChange}
+                accept="image/*"
+                className="hidden"
               />
               <Button variant="outline" onClick={() => signatureInputRef.current?.click()}>
                 Seleccionar Firma
@@ -260,7 +295,7 @@ export const BusinessSettingsForm: React.FC = () => {
 
       <div className="flex justify-center pt-4">
         <Button size="lg" className="min-w-[250px]" onClick={handleSubmit}>
-           Guardar Configuración
+          Guardar Configuración
         </Button>
       </div>
 

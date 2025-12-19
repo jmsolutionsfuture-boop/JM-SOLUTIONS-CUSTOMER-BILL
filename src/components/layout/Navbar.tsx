@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Receipt, Settings, Menu, X, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, Settings, Menu, X, Wallet, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -13,6 +13,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
   { name: 'Clientes', path: '/clientes', icon: Users },
+  { name: 'Productos', path: '/productos', icon: Package },
   { name: 'Facturas', path: '/facturas', icon: Receipt },
   { name: 'Configuración', path: '/configuracion', icon: Settings },
 ];
@@ -30,11 +31,11 @@ export const Navbar: React.FC<{ currentPath?: string }> = ({ currentPath = '/' }
   }, []);
 
   return (
-    <nav 
+    <nav
       className={cn(
         "sticky top-0 z-40 w-full transition-all duration-300 border-b",
-        isScrolled 
-          ? "bg-background/80 backdrop-blur-md border-border py-1 md:py-2" 
+        isScrolled
+          ? "bg-background/80 backdrop-blur-md border-border py-1 md:py-2"
           : "bg-background border-transparent py-2 md:py-4"
       )}
     >
@@ -71,9 +72,9 @@ export const Navbar: React.FC<{ currentPath?: string }> = ({ currentPath = '/' }
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="text-foreground"
             >
@@ -84,7 +85,7 @@ export const Navbar: React.FC<{ currentPath?: string }> = ({ currentPath = '/' }
       </div>
 
       {/* Mobile Nav */}
-      <div 
+      <div
         className={cn(
           "md:hidden absolute top-full left-0 w-full bg-background border-b shadow-xl transition-all duration-300 origin-top",
           isMobileMenuOpen ? "scale-y-100 opacity-100" : "scale-y-0 opacity-0 pointer-events-none"
